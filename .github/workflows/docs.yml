@@ -1,0 +1,103 @@
+name: Docs
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  # Reusable: the Release workflow calls this after a real publish so the
+  # docs site re-resolves the freshly-published version without waiting for
+  # the next push to main. See .github/workflows/release.yml.
+  workflow_call:
+
+# Required by actions/deploy-pages on top of the default GITHUB_TOKEN scopes.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Avoid concurrent runs deploying stale builds; only the latest push to main wins.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build site
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      # mise pins JDK, gradle, python, and the rest of the toolchain (see
+      # /mise.toml). setup-gradle stays for its build / dependency cache.
+      - name: Set up mise toolchain
+        uses: jdx/mise-action@v4
+        with:
+          install: true
+          cache: true
+
+      # Pinned at v5 rather than v6: v6 moved caching to a commercially-
+      # licensed component. v5 keeps the freely-licensed caching and runs
+      # on Node 24. See .github/workflows/ci.yml for the full rationale.
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Install mkdocs toolchain
+        run: mise run docs:install
+
+      # Resolve the version for the docs build. The mkdocs-macros plugin
+      # reads LIBRARY_VERSION (see /main.py): on push-to-main, release-
+      # triggered, and manual builds we pass the latest GitHub release tag so
+      # install snippets render the real pinned version. PR builds skip this
+      # step so previews render the 'main' fallback — appropriate for
+      # unreleased work.
+      - name: Resolve release version
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=$(gh release view --json tagName -q .tagName 2>/dev/null || true)
+          if [[ -n "$TAG" ]]; then
+            echo "LIBRARY_VERSION=$TAG" >> "$GITHUB_ENV"
+            echo "Docs will render version: $TAG"
+          else
+            echo "No release tag found; docs will render the 'main' fallback."
+          fi
+
+      # Dokka writes aggregated HTML into build/dokka/html and copyDokkaToDocs
+      # mirrors it into docs/api/ where mkdocs picks it up.
+      - name: Generate Dokka API reference
+        run: mise run docs:dokka
+
+      - name: Validate docs structure
+        run: mise run docs:check
+
+      # docs:build runs docs:dokka + docs:check via its dependency chain;
+      # we ran them as separate steps above for GH Actions log readability,
+      # so call docs:build:only here to skip the duplicate work.
+      - name: Build site
+        run: mise run docs:build:only
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site/
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Configure Pages
+        uses: actions/configure-pages@v6
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v5
