@@ -58,6 +58,26 @@ Ktor/Ktorfit. Testing: `kotlin.test` + Turbine + `kotlinx-coroutines-test` +
 Kotest (property tests). Library code uses **constructor injection only** — no
 Koin/service locator inside `:src`.
 
+**Finding a library.** Before writing platform glue or pulling a JVM-only / `expect`-`actual`-heavy
+dependency, look for an existing multiplatform one — in this order:
+
+1. **Official Kotlin / JetBrains** — the kotlinx.* family (coroutines,
+   serialization, datetime, io, atomicfu) and Ktor. First-party, KMP-native, and
+   what the rest of this guide assumes.
+2. **Google official KMP libraries** — AndroidX/Jetpack artifacts that publish
+   real multiplatform targets (e.g. Room KMP, DataStore, Lifecycle, Paging,
+   Collections, Annotations). Prefer these over Android-only equivalents so the
+   code stays in `commonMain`.
+3. **The community catalog** — [terrakok/kmp-awesome](https://github.com/terrakok/kmp-awesome),
+   a curated index of KMP libraries by category. Use it to discover an existing,
+   maintained multiplatform option before rolling your own.
+
+Vet any candidate against the rules here: it must publish the targets we ship
+(Apple + Android + jvm), be **stable** (no EAP/RC/Beta — §3), not pull in
+CocoaPods or Compose Multiplatform (§12), and not exceed SKIE's Kotlin range.
+Add it to `gradle/libs.versions.toml` only (§11), web-searching the latest stable
+first. When nothing suitable exists, keep the `expect`/`actual` seam tiny (§4).
+
 ## 6. Concurrency
 
 - `kotlinx.coroutines` only. No `GlobalScope`.
@@ -120,7 +140,9 @@ and detekt failures.
 ## 11. Task workflow (mise)
 
 1. Read this file, then `gradle/libs.versions.toml`, then `.claude/lessons/LESSONS.md`.
-2. Adding a dependency? Web-search the latest stable; add to the catalog only.
+2. Adding a dependency? First hunt for an existing multiplatform one (§5:
+   official Kotlin/JetBrains → Google official KMP → terrakok/kmp-awesome).
+   Then web-search the latest stable; add to the catalog only.
    `mise run dependencies:outdated` lists candidates; `dependencies:update`
    rewrites the catalog (review the diff).
 3. Platform-specific? Keep the `expect`/`actual` seam tiny; push logic to common.

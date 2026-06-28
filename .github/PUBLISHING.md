@@ -55,7 +55,7 @@ The sample apps under `/apps/ios` and `/apps/macos` consume the root `Package.sw
 ```bash
 mise run spm:dev        # rebuild debug XCFramework + flip Package.swift to local path
 mise run spm:restore    # restore the committed (remote-binary) Package.swift
-mise run xcframework    # rebuild release XCFramework without touching Package.swift
+mise run build:xcframework  # rebuild release XCFramework without touching Package.swift
 mise run publish:local  # publish the artifacts to the local Maven repository for consumption
 ```
 

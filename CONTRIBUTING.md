@@ -41,7 +41,7 @@ mise run format
 ## Commits & PRs
 
 - Keep commits focused; explain *why* in the body when it isn't obvious.
-- CI runs the same `mise run check` + `mise run xcframework`. Green CI is
+- CI runs the same `mise run check` + `mise run build:xcframework`. Green CI is
   required to merge.
 - Learned something non-obvious? Add a terse line to
   `.claude/lessons/LESSONS.md`.

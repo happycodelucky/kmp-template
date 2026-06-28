@@ -69,7 +69,7 @@ run = "./gradlew :src:assembleAndroidMain"
 description = "Compile + jar the JVM desktop/server target."
 run = "./gradlew :src:jvmJar"
 
-[tasks.xcframework]
+[tasks."build:xcframework"]
 description = "Build the release XCFramework (all slices — iosArm64, iosSimulatorArm64, macosArm64)."
 run = "./gradlew :src:assembleSrcXCFramework"
 

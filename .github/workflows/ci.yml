@@ -50,7 +50,7 @@ jobs:
 
       # `mise run check` runs ktlint + every unit test on every target
       # (iosSimulatorArm64Test, macosArm64Test, testAndroidHostTest, jvmTest).
-      # `mise run xcframework` builds the KMMBridge-consumable artifact.
+      # `mise run build:xcframework` builds the KMMBridge-consumable artifact.
       # The CI version stamp is passed through to Gradle via
       # ORG_GRADLE_PROJECT_version — the standard env-var form of
       # `-Pversion=…` so the mise tasks don't need to know CI is the caller.
@@ -59,7 +59,7 @@ jobs:
           ORG_GRADLE_PROJECT_version: ${{ steps.version.outputs.VERSION }}
         run: |
           mise run check
-          mise run xcframework
+          mise run build:xcframework
 
       - name: Upload XCFramework
         uses: actions/upload-artifact@v7
