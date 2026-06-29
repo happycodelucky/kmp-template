@@ -40,6 +40,7 @@ Closes #
 - [ ] New/changed logic has `commonTest` coverage (`runTest` virtual time, no `Thread.sleep`)
 - [ ] Native + Android compile clean (`:src:compileKotlinMacosArm64` / `compileKotlinIosSimulatorArm64` / `compileAndroidMain`) — the JVM compile alone is not a sufficient gate
 - [ ] Public API changes follow the Swift-interop rules (§7): sealed → exhaustive enum, `@Throws` replicated on every `actual` incl. `CancellationException`, no `kotlin.Result<T>` at the boundary
+- [ ] If the public API changed intentionally, `mise run api:dump` was run and the `api/` diff is committed and reviewed (§8)
 - [ ] New dependencies were sourced per §5 (official Kotlin → Google KMP → kmp-awesome), are stable, and were added to `gradle/libs.versions.toml` only
 - [ ] Docs updated (`docs/` + KDoc) for any public API or behavior change
 - [ ] No hard-rule violations (§12): no Compose MP, CocoaPods, `GlobalScope`, `!!` in production, `java.time` in common, `@Synchronized`/`volatile`, callback public APIs, EAP/RC/Beta deps

@@ -114,6 +114,11 @@ echo "  github org   : $ORG"
 echo ""
 
 # --- 3. Rename module directories + Kotlin package dirs ---------------------
+# The committed ABI dumps under <module>/api/ are named after the old module
+# (src.klib.api) and carry the old library-unique-name. They're a regenerable
+# baseline, so drop them; the rendered project recreates them with `mise run
+# api:dump` (the "next steps" note below reminds the user).
+rm -rf src/api src-testing/api
 mv src "$NAME"
 mv src-testing "$NAME-testing"
 
@@ -192,19 +197,30 @@ replace_in_file() {
         -e "s/:src/:$NAME/g" \
         -e "s/build@@SRCTASK@@/build:src/g" \
         -e "s/assembleSrcXCFramework/assemble${FRAMEWORK}XCFramework/g" \
+        -e "s#src-testing/build#$NAME-testing/build#g" \
+        -e "s#src-testing/api#$NAME-testing/api#g" \
+        -e "s#src/build#$NAME/build#g" \
+        -e "s#src/api#$NAME/api#g" \
         "$file" > "$tmp"
     # Only overwrite if something changed (keeps mtimes stable otherwise).
     if cmp -s "$file" "$tmp"; then rm -f "$tmp"; else mv "$tmp" "$file"; fi
 }
 
 # Walk regular files only, skipping binary/build/scratch dirs and symlinks.
+# scripts/ is NOT pruned: scripts/version.sh and scripts/release.sh survive the
+# render and carry tokens (__FRAMEWORK__, __PROJECT_NAME__) that must be replaced.
+# We skip only this running script (editing a script mid-execution is unsafe) and
+# template-manifest.txt (deleted below).
 find . \
-    -type d \( -name .git -o -name build -o -name .gradle -o -name .kotlin -o -path './scripts' -o -name '*.xcodeproj' \) -prune -o \
+    -type d \( -name .git -o -name build -o -name .gradle -o -name .kotlin -o -name '*.xcodeproj' \) -prune -o \
     -type f ! -name '*.jar' ! -name '*.png' ! -name '*.jpg' ! -name '*.zip' ! -name '*.keystore' -print | \
 while IFS= read -r f; do
     # Skip symlinks (AGENTS.md). -type f above already excludes them on macOS/Linux,
     # but guard explicitly for portability.
     [ -L "$f" ] && continue
+    case "$f" in
+        ./scripts/init.sh|./scripts/template-manifest.txt) continue ;;
+    esac
     replace_in_file "$f"
 done
 
@@ -229,7 +245,9 @@ while IFS= read -r entry; do
     rm -rf "$entry"
 done < scripts/template-manifest.txt
 
-# scripts/ should now be empty (init.sh + manifest were on the list); remove it.
+# Remove scripts/ only if empty. After render it still contains version.sh and
+# release.sh (the rendered project's release tooling), so this is normally a
+# no-op — init.sh + template-manifest.txt are gone, the release scripts stay.
 rmdir scripts 2>/dev/null || true
 
 # --- 8. Next steps ----------------------------------------------------------
@@ -241,9 +259,14 @@ Next steps:
   rm -rf .git && git init && git add -A && git commit -m "Initial commit"
   cp local.properties.example local.properties   # set sdk.dir
   mise install
-  mise run check
+  mise run api:dump      # generate the public-API baseline for this project
+  mise run check         # ktlint + detekt + tests + API check, every target
 
 Then edit:
   CLAUDE.md §1 (Scope) — describe what $DISPLAY does
   $NAME/src/commonMain/kotlin/$GROUP_PATH/$PKG_PATH/Greeter.kt — your real API
+
+Note: commit the generated api/ dumps — they're the reference the API check
+compares against. After an intentional public-API change, re-run api:dump and
+commit the diff.
 EOF

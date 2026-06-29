@@ -26,6 +26,13 @@ plugins {
     // ben-manes reports updates; version-catalog-update rewrites libs.versions.toml.
     alias(libs.plugins.ben.manes.versions)
     alias(libs.plugins.version.catalog.update)
+
+    // Build-health tooling. dependency-analysis adds the root `buildHealth` task
+    // (mise dependencies:analyze) — unused/misused/transitive dependency advice.
+    // gradle-doctor warns on slow config, JVM mismatches, and cache misses on
+    // every build (mise build:doctor surfaces its diagnostics explicitly).
+    alias(libs.plugins.dependency.analysis)
+    alias(libs.plugins.gradle.doctor)
 }
 
 allprojects {
@@ -35,6 +42,22 @@ allprojects {
     // overrides this at build time via `-Pversion=...` to stamp exact `vX.Y.Z`
     // for releases without ever committing the override back.
     version = providers.gradleProperty("version").getOrElse("0.1.0-SNAPSHOT")
+}
+
+// Gradle Doctor — build-health diagnostics. mise owns the JDK (via the [tools]
+// pins), so its JAVA_HOME checks are advisory here, not fatal: a fresh
+// `git clone && mise run check` must never fail on a tool's environment opinion.
+// The remaining checks (slow config, negative-avoidance, cache misuse) stay on.
+doctor {
+    javaHome {
+        // mise puts the right JDK on PATH; JAVA_HOME may be unset. Warn, don't fail.
+        ensureJavaHomeIsSet.set(false)
+        ensureJavaHomeMatches.set(false)
+        failOnError.set(false)
+    }
+    // Don't fail a build just because another Gradle daemon is alive (common
+    // when an IDE holds one open alongside a terminal build).
+    disallowMultipleDaemons.set(false)
 }
 
 subprojects {

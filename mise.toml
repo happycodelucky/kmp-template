@@ -113,6 +113,30 @@ run = "./gradlew :src:ktlintCheck :src:detekt :src-testing:ktlintCheck :src-test
 description = "Auto-fix ktlint findings where possible, both modules."
 run = "./gradlew :src:ktlintFormat :src-testing:ktlintFormat"
 
+# --- public API / ABI ------------------------------------------------------
+# The committed dumps under <module>/api/ are the reference for the public
+# surface. `apiCheck` runs as part of `check` (and CI) — it fails if the public
+# API changed without a deliberate `apiDump`. Review the api/ diff like any other
+# code change.
+
+[tasks."api:check"]
+description = "Verify the public API/ABI matches the committed dump (also runs inside `check`)."
+run = "./gradlew :src:checkKotlinAbi :src-testing:checkKotlinAbi"
+
+[tasks."api:dump"]
+description = "Regenerate the committed public API/ABI dump after an INTENTIONAL public change. Review + commit the api/ diff."
+run = "./gradlew :src:updateKotlinAbi :src-testing:updateKotlinAbi"
+
+# --- build health ----------------------------------------------------------
+
+[tasks."dependencies:analyze"]
+description = "Dependency hygiene: unused deps, api-vs-implementation misuse, undeclared transitives (dependency-analysis)."
+run = "./gradlew buildHealth"
+
+[tasks."build:doctor"]
+description = "Surface Gradle Doctor build-health diagnostics (slow config, cache misuse, JVM mismatches)."
+run = "./gradlew assemble --dry-run"
+
 # --- iteration helpers (Apple) ---------------------------------------------
 
 [tasks."spm:dev"]
@@ -194,31 +218,32 @@ description = "Publish both modules to the local Maven repo (~/.m2)."
 run = "./gradlew publishToMavenLocal"
 
 [tasks."publish:maven"]
-description = "Publish to Maven Central. --dryrun = upload to staging only; --version X overrides. Real tagged releases go through .github/workflows/release.yml."
-# Flags/options are declared in the `usage` spec below; the {{flag}}/{{option}}
-# templates read from it.
-#   --dryrun  -> publishToMavenCentral (vanniktech: upload to Central staging and
-#                STOP; review at https://central.sonatype.com/ before releasing).
-#                Safe to run frequently. Contingent on automaticRelease=false in
-#                template.publish.gradle.kts.
-#   (default) -> publishAndReleaseToMavenCentral (IRREVERSIBLE public release).
-#   --version X -> -Pversion=X.
+description = "Release to Maven Central. Bump with --major/--minor/--patch (most significant wins) or --version X; --dryrun stages only. See scripts/release.sh."
+# The version is computed from the latest git tag (scripts/version.sh), the same
+# base .github/workflows/release.yml uses. scripts/release.sh orchestrates:
+#   --dryrun : compute version -> publishToMavenCentral (Central STAGING only;
+#              nothing committed/tagged/released). Safe to run repeatedly.
+#   (real)   : after a typed confirmation — update Package.swift, publish + release
+#              to Maven Central (IRREVERSIBLE), commit, tag vX.Y.Z, push, and
+#              `gh release create` with the XCFramework asset.
+# The canonical path for team releases is still .github/workflows/release.yml;
+# this task is the by-hand equivalent.
 usage = '''
-flag "--dryrun" help="Upload to Central staging only; do not release."
-flag "--version <version>" help="Override the published version (-Pversion=)."
+flag "--major" help="Bump the major version from the latest tag (X.0.0)."
+flag "--minor" help="Bump the minor version (x.Y.0)."
+flag "--patch" help="Bump the patch version (x.y.Z). Default if no bump flag given."
+flag "--version <version>" help="Use this exact version instead of bumping."
+flag "--dryrun" help="Upload to Central staging only; no release, tag, or commit."
 '''
 run = '''
-DRYRUN="{{flag(name='dryrun')}}"
+ARGS=""
+[ "{{flag(name='major')}}" = "true" ] && ARGS="$ARGS --major"
+[ "{{flag(name='minor')}}" = "true" ] && ARGS="$ARGS --minor"
+[ "{{flag(name='patch')}}" = "true" ] && ARGS="$ARGS --patch"
+[ "{{flag(name='dryrun')}}" = "true" ] && ARGS="$ARGS --dryrun"
 VERSION="{{option(name='version')}}"
-VERSION_ARG=""
-[ -n "$VERSION" ] && VERSION_ARG="-Pversion=$VERSION"
-if [ "$DRYRUN" = "true" ]; then
-  echo "Dry run: uploading to Central staging only (no release)."
-  ./gradlew publishToMavenCentral $VERSION_ARG
-else
-  echo "IRREVERSIBLE: publishing + releasing to Maven Central."
-  ./gradlew publishAndReleaseToMavenCentral $VERSION_ARG
-fi
+[ -n "$VERSION" ] && ARGS="$ARGS --version $VERSION"
+sh scripts/release.sh $ARGS
 '''
 
 # --- dependencies ----------------------------------------------------------

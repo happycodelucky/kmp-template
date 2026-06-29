@@ -105,14 +105,24 @@ and types (`iOS`, `macOS`) except JetBrains spellings (`iosArm64`, `withMacos()`
 Two channels, non-overlapping:
 - **Maven Central** (`template.publish` / vanniktech): Android AAR + jvm jar +
   KMP metadata + klibs. For Gradle/KMP consumers. `mise run publish:local`
-  installs to `~/.m2`; `mise run publish:maven [--dryrun] [--version X]` targets
-  Central.
+  installs to `~/.m2`. `mise run publish:maven` releases to Central — bump with
+  `--major`/`--minor`/`--patch` (most significant wins) or `--version X`;
+  `--dryrun` stages only. A real run updates Package.swift, publishes, tags, and
+  creates the GitHub release (after a typed confirmation). See `.github/PUBLISHING.md`.
 - **GitHub Releases** (KMMBridge in `src/build.gradle.kts`): the SKIE-enhanced
   `Src.xcframework` for SPM consumers. Don't redeclare `XCFramework("Src")` —
   KMMBridge auto-creates it. CI-only publishing.
 
 Real tagged releases go through `.github/workflows/release.yml` (computes the
 version, dry-run by default). See `.github/PUBLISHING.md`.
+
+**Public-API stability.** The committed dumps under `<module>/api/` are the
+reference for the public surface, across every target. `mise run check` (and CI)
+runs `api:check` and fails on any unintended change — so a breaking change to a
+published library is always deliberate. After an *intentional* public-API change,
+run `mise run api:dump` and commit the `api/` diff alongside the code; review it
+like any other change. This is the single most important guard for a library:
+it's what stops an accidental rename or removed function from breaking consumers.
 
 ## 9. Platform notes
 
@@ -144,13 +154,18 @@ and detekt failures.
    official Kotlin/JetBrains → Google official KMP → terrakok/kmp-awesome).
    Then web-search the latest stable; add to the catalog only.
    `mise run dependencies:outdated` lists candidates; `dependencies:update`
-   rewrites the catalog (review the diff).
+   rewrites the catalog (review the diff); `dependencies:analyze` flags unused or
+   misdeclared deps (api vs implementation).
 3. Platform-specific? Keep the `expect`/`actual` seam tiny; push logic to common.
 4. Public API crossing to Swift? Apply §7 at design time.
-5. Done when `mise run check` passes AND `:src:compileKotlinMacosArm64` /
+5. Changed the public API on purpose? `mise run api:dump` and commit the `api/`
+   diff (§8) — otherwise `check` fails on the surface change.
+6. Done when `mise run check` passes AND `:src:compileKotlinMacosArm64` /
    `compileKotlinIosSimulatorArm64` / `compileAndroidMain` build clean (common-code
    bugs often only surface on Native — the JVM compile is not a sufficient gate).
-6. Learned something non-obvious? Add it to `.claude/lessons/LESSONS.md` (terse).
+   `check` also runs the API/ABI check (§8). `mise run build:doctor` surfaces
+   build-health diagnostics if a build feels slow or misconfigured.
+7. Learned something non-obvious? Add it to `.claude/lessons/LESSONS.md` (terse).
 
 ## 12. Hard rules
 

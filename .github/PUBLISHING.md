@@ -28,7 +28,62 @@ Releases are triggered via `workflow_dispatch` on `release.yml`. No one types a 
 
 The `automaticRelease = false` flag in `src/build.gradle.kts` is what makes dry-run behaviour correct. Do not flip it without reading the comment there.
 
-**Secrets:** the four `MAVEN_CENTRAL_*` secrets live on the `continuous-deployment` GitHub environment, not the repository scope. The `release.yml` job binds to it via `environment: continuous-deployment`.
+## Releasing by hand (`mise run publish:maven`)
+
+The CI workflow above is the canonical path. For a solo or local release, `mise run publish:maven` (→ `scripts/release.sh`) runs the same steps from your machine. The version is computed from the latest git tag (`scripts/version.sh`):
+
+```bash
+mise run publish:maven --minor --dryrun   # compute next version, stage to Central only
+mise run publish:maven --patch            # full release of the next patch (prompts to confirm)
+mise run publish:maven --version 1.4.0     # release an exact version
+```
+
+- **Bump flags** — `--major` / `--minor` / `--patch` bump that component from the latest `vX.Y.Z` tag (lower components reset to zero). If more than one is passed, the **most significant wins**. `--version X.Y.Z` overrides the computed value. Default is `--patch`.
+- **`--dryrun`** — computes the version and runs `publishToMavenCentral` (Central staging only). Nothing is committed, tagged, or released. Safe to run repeatedly.
+- **Real release** — after a typed confirmation (it echoes the plan first; Maven Central is irreversible), it: rewrites `Package.swift` to the released remote-binary form (URL + checksum), runs `publishAndReleaseToMavenCentral`, commits, creates and pushes the `vX.Y.Z` tag, and runs `gh release create` with the XCFramework zip asset.
+
+Requires a clean tree, an authenticated `gh`, and the Maven Central credentials configured (next section).
+
+## Credentials
+
+The vanniktech plugin reads **four Gradle properties**. It doesn't care where they come from — Gradle resolves a property `foo` from a `-Pfoo=` flag, an `ORG_GRADLE_PROJECT_foo` env var, or a `gradle.properties` file (CLI → env → `~/.gradle` → project). That's why the same setup works in CI and locally.
+
+| Property | What it is | Where to get it |
+|---|---|---|
+| `mavenCentralUsername` | Central Portal **token** username (not your login) | [central.sonatype.com](https://central.sonatype.com/) → Account → Generate User Token |
+| `mavenCentralPassword` | Central Portal token password | same token |
+| `signingInMemoryKey` | ASCII-armored **GPG private key** block | `gpg --armor --export-secret-keys <KEY_ID>` (the whole `-----BEGIN…END PGP PRIVATE KEY BLOCK-----`) |
+| `signingInMemoryKeyPassword` | The GPG key's passphrase | what you set when creating the key |
+
+Your GPG public key must be published to a keyserver Central checks (e.g. `gpg --keyserver keyserver.ubuntu.com --send-keys <KEY_ID>`), or Central rejects the signatures.
+
+### CI
+
+Set four secrets on the **`continuous-deployment` GitHub environment** (repo Settings → Environments → `continuous-deployment` → Secrets — *not* repository-scoped secrets; `release.yml` binds to that environment):
+
+| GitHub secret | Maps to property |
+|---|---|
+| `MAVEN_CENTRAL_USERNAME` | `mavenCentralUsername` |
+| `MAVEN_CENTRAL_PASSWORD` | `mavenCentralPassword` |
+| `MAVEN_CENTRAL_SIGNING_KEY` | `signingInMemoryKey` |
+| `MAVEN_CENTRAL_SIGNING_KEY_PASSWORD` | `signingInMemoryKeyPassword` |
+
+`release.yml` exports them as `ORG_GRADLE_PROJECT_*` env vars, which Gradle maps onto the property names above.
+
+### Local (`mise run publish:maven`)
+
+Put them in **`~/.gradle/gradle.properties`** (your home directory — **never** the repo, and never a committed `gradle.properties`; these are secrets):
+
+```properties
+mavenCentralUsername=<token-username>
+mavenCentralPassword=<token-password>
+signingInMemoryKeyPassword=<gpg-passphrase>
+# Paste the armored key as a single line with literal \n between lines, or use
+# the file-based form: signingInMemoryKeyFile=/absolute/path/to/secret-key.asc
+signingInMemoryKey=-----BEGIN PGP PRIVATE KEY BLOCK-----\n…\n-----END PGP PRIVATE KEY BLOCK-----
+```
+
+Or export the matching `ORG_GRADLE_PROJECT_*` env vars in your shell instead. `mise run publish:maven` checks they're present before it builds and fails fast with this guidance if not. A `--dryrun` still needs the signing key (Central validates signatures even in staging).
 
 ## SPM distribution — KMMBridge → GitHub Releases
 
