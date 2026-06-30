@@ -7,6 +7,8 @@
  * for versions (CLAUDE.md §3).
  */
 
+import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
+
 plugins {
     alias(libs.plugins.kotlin.multiplatform) apply false
     alias(libs.plugins.android.kotlin.multiplatform.library) apply false
@@ -129,4 +131,33 @@ tasks.register<Copy>("copyDokkaToDocs") {
     dependsOn("dokkaGeneratePublicationHtml")
     from(layout.buildDirectory.dir("dokka/html"))
     into(layout.projectDirectory.dir("docs/api"))
+}
+
+// Stable-only dependency updates (CLAUDE.md §3: no EAP/RC/Beta on main).
+//
+// `-Drevision=release` only chooses which Maven metadata channel ben-manes
+// reads — it does NOT reject versions whose string is a pre-release, so without
+// this rule `dependencyUpdates` happily suggests 1.5.0-alpha22 over 1.4.0. The
+// rejectVersionIf rule below filters every candidate whose version carries a
+// pre-release qualifier. It governs BOTH mise tasks: `dependencies:outdated`
+// (the report) and `dependencies:update` (version-catalog-update consumes the
+// same dependencyUpdates output).
+//
+// A version is considered STABLE only if it has no pre-release qualifier.
+// Matches: 1.2.3, 2026.06.00, 1.2.3.4. Rejects: -alpha/-beta/-rc/-eap/-m1/
+// -snapshot/-dev/-preview (any case, with or without a separator).
+val stableVersion = "^[0-9][0-9.]*$".toRegex()
+val preReleaseQualifier =
+    "(?i)[.\\-]?(alpha|beta|rc|cr|m|eap|snapshot|dev|preview|pre|b)[.\\-]?[0-9]*$|(?i)(snapshot)".toRegex()
+
+tasks.withType<DependencyUpdatesTask>().configureEach {
+    // Read the stable release channel, not integration/milestone metadata.
+    revision = "release"
+    rejectVersionIf {
+        // Reject a candidate that isn't a clean stable version, OR carries a
+        // pre-release qualifier. The current version is never rejected here —
+        // ben-manes only feeds candidate upgrades through this predicate.
+        !stableVersion.matches(candidate.version) ||
+            preReleaseQualifier.containsMatchIn(candidate.version)
+    }
 }

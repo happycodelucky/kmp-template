@@ -250,18 +250,24 @@ sh scripts/release.sh $ARGS
 # Renovate (renovate.json5) opens PRs in CI; these are the local equivalents.
 
 [tasks."dependencies:outdated"]
-description = "List dependencies with newer stable versions (ben-manes gradle-versions-plugin)."
+description = "List dependencies with newer STABLE versions (ben-manes gradle-versions-plugin)."
+# Stable-only (no alpha/beta/rc/snapshot) is enforced by the rejectVersionIf
+# rule on DependencyUpdatesTask in build.gradle.kts (CLAUDE.md §3) — it governs
+# both this task and dependencies:update.
 # --no-parallel: dependencyUpdates resolves every configuration across all
 # projects, which Gradle forbids under org.gradle.parallel=true (set in
 # gradle.properties). The flag overrides it for this invocation only.
-run = "./gradlew dependencyUpdates -Drevision=release --no-parallel"
+run = "./gradlew dependencyUpdates --no-parallel"
 
 [tasks."dependencies:update"]
-description = "Rewrite gradle/libs.versions.toml to the latest stable versions, then review the diff (version-catalog-update)."
+description = "Rewrite gradle/libs.versions.toml to the latest STABLE versions, then review the diff (version-catalog-update)."
+# Stable-only is enforced by the rejectVersionIf rule in build.gradle.kts
+# (CLAUDE.md §3) — version-catalog-update consumes the same filtered
+# dependencyUpdates output, so pre-releases never reach the catalog.
 # Not truly interactive: it rewrites the catalog; review with `git diff
-# gradle/libs.versions.toml` and accept or revert. Web-search any bump that
-# crosses the Kotlin/SKIE pin before accepting (CLAUDE.md §3) — Kotlin is bound
-# above by SKIE and must be bumped manually, paired with the SKIE pin.
+# gradle/libs.versions.toml` and accept or revert. A Kotlin bump is allowed by
+# the filter (2.4.0 is "stable") but is still a MANUAL, SKIE-paired change —
+# Kotlin is bound above by SKIE; verify SKIE supports it before committing.
 # --no-parallel: versionCatalogUpdate runs dependencyUpdates internally, which
 # isn't parallel-safe (see dependencies:outdated above).
 run = "./gradlew versionCatalogUpdate --no-parallel"
