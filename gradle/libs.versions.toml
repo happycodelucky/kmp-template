@@ -9,6 +9,13 @@
 # mise.toml pins the non-Gradle tools (JDK, gradle, xcodegen, gh); this catalog
 # owns everything in the Gradle build graph. The two must agree on the Kotlin /
 # AGP / JDK story (see mise.toml header).
+#
+# NOTE: `mise run dependencies:update` (version-catalog-update) reformats this
+# file — it alphabetizes entries and drops version keys it considers "unused",
+# including ones read via the string-based findVersion("…") API in the
+# convention plugin (android-compile-sdk, the deployment targets, etc.). After
+# running it, review the diff: keep the version bumps, but restore this grouped
+# structure and any pruned keys rather than committing the flattened output.
 # =============================================================================
 
 [versions]
@@ -24,17 +31,16 @@ skie = "0.10.13"               # Supports Kotlin 2.4.0 (changelog 2026-06-24).
 kmmbridge = "1.2.1"            # XCFramework → GitHub Release asset → SPM (CLAUDE.md §8).
 dokka = "2.2.0"                # Kotlin API doc generator; Dokka v2 task layout.
 # vanniktech's gradle-maven-publish-plugin — publishes signed artifacts to the
-# Sonatype Central Portal (central.sonatype.com). 0.36.0 pins the JDK17 /
-# Gradle 9 / AGP 9 floor and supports com.android.kotlin.multiplatform.library
-# publications. Coexists with KMMBridge — each plugin owns its own repository
-# and publish-umbrella task, so there's no cross-contamination.
-mavenPublish = "0.36.0"
+# Sonatype Central Portal (central.sonatype.com). Pins the JDK17 / Gradle 9 /
+# AGP 9 floor and supports com.android.kotlin.multiplatform.library publications.
+# Coexists with KMMBridge — each plugin owns its own repository and
+# publish-umbrella task, so there's no cross-contamination.
+mavenPublish = "0.37.0"
 
 # --- Dependency management (mise dependencies:outdated / dependencies:update) -
 # ben-manes reports available updates; version-catalog-update consumes that
 # report to rewrite THIS file in place. version-catalog-update REQUIRES the
 # ben-manes plugin to be applied (it reads its dependencyUpdates task output).
-# Verified latest stable on the Gradle Plugin Portal 2026-06-28.
 benManesVersions = "0.54.0"
 versionCatalogUpdate = "1.1.0"
 
@@ -42,9 +48,9 @@ versionCatalogUpdate = "1.1.0"
 # dependency-analysis: flags unused deps, api-vs-implementation misuse, and
 # transitive deps you rely on directly. Run via `mise run dependencies:analyze`.
 # gradle-doctor: build-health warnings (slow config, JVM mismatches, cache
-# misses). Both verified latest stable on the Gradle Plugin Portal 2026-06-28.
+# misses).
 dependencyAnalysis = "3.16.0"
-gradleDoctor = "0.12.0"
+gradleDoctor = "0.12.1"
 
 # --- Android SDK ------------------------------------------------------------
 android-compile-sdk = "36"
@@ -62,17 +68,17 @@ kotlinx-atomicfu = "0.33.0"
 # --- Logging ----------------------------------------------------------------
 # Kermit — multiplatform logging baseline, wired into every module via the
 # __PROJECT_NAME__.kmp-library convention plugin (CLAUDE.md §5).
-kermit = "2.0.8"
+kermit = "2.1.0"
 
 # --- Sample-app deps (apps/android only — iOS/macOS consume via SPM) ---------
 androidx-activity-compose = "1.13.0"
-androidx-lifecycle-runtime-compose = "2.10.0"
-androidx-compose-bom = "2026.05.01"
+androidx-lifecycle-runtime-compose = "2.11.0"
+androidx-compose-bom = "2026.06.00"
 
 # --- Testing ----------------------------------------------------------------
 turbine = "1.2.1"
 # Kotest — assertions + property engine only; runner is kotlin.test (CLAUDE.md §10).
-kotest = "6.1.11"
+kotest = "6.2.1"
 
 # --- Lint ------------------------------------------------------------------
 ktlint = "1.8.0"               # The ktlint tool itself.
