@@ -251,14 +251,20 @@ sh scripts/release.sh $ARGS
 
 [tasks."dependencies:outdated"]
 description = "List dependencies with newer stable versions (ben-manes gradle-versions-plugin)."
-run = "./gradlew dependencyUpdates -Drevision=release"
+# --no-parallel: dependencyUpdates resolves every configuration across all
+# projects, which Gradle forbids under org.gradle.parallel=true (set in
+# gradle.properties). The flag overrides it for this invocation only.
+run = "./gradlew dependencyUpdates -Drevision=release --no-parallel"
 
 [tasks."dependencies:update"]
 description = "Rewrite gradle/libs.versions.toml to the latest stable versions, then review the diff (version-catalog-update)."
 # Not truly interactive: it rewrites the catalog; review with `git diff
 # gradle/libs.versions.toml` and accept or revert. Web-search any bump that
-# crosses the Kotlin/SKIE pin before accepting (CLAUDE.md §3).
-run = "./gradlew versionCatalogUpdate"
+# crosses the Kotlin/SKIE pin before accepting (CLAUDE.md §3) — Kotlin is bound
+# above by SKIE and must be bumped manually, paired with the SKIE pin.
+# --no-parallel: versionCatalogUpdate runs dependencyUpdates internally, which
+# isn't parallel-safe (see dependencies:outdated above).
+run = "./gradlew versionCatalogUpdate --no-parallel"
 
 # --- aggregates ------------------------------------------------------------
 
