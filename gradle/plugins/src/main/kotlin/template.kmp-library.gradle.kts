@@ -108,9 +108,10 @@ kotlin {
     // --- Compiler options (CLAUDE.md §3) ------------------------------------
     @OptIn(ExperimentalKotlinGradlePluginApi::class)
     compilerOptions {
-        // K2 stable APIs only.
-        languageVersion.set(KotlinVersion.KOTLIN_2_3)
-        apiVersion.set(KotlinVersion.KOTLIN_2_3)
+        // K2 stable APIs only. Keep in lockstep with the `kotlin` pin in
+        // gradle/libs.versions.toml.
+        languageVersion.set(KotlinVersion.KOTLIN_2_4)
+        apiVersion.set(KotlinVersion.KOTLIN_2_4)
         allWarningsAsErrors.set(true)
     }
 
@@ -145,10 +146,11 @@ kotlin {
     // the Apple slices), the plugin infers their ABI from the prior dump instead
     // of failing — so the checked-in dump stays complete. The Apple-target ABI is
     // verified on the macOS leg of CI, which can build those slices.
+    //
+    // As of Kotlin 2.4.0 the presence of this block enables validation; the old
+    // `enabled.set(true)` property was removed.
     @OptIn(ExperimentalAbiValidation::class)
-    abiValidation {
-        enabled.set(true)
-    }
+    abiValidation { }
 }
 
 skie {

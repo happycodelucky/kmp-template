@@ -53,7 +53,7 @@ xcodegen, gh); the two must agree on the Kotlin/AGP/JDK story.
 kotlinx.* family (coroutines, atomicfu, io), **Kermit for logging** (wired into
 every module by the convention plugin — `Logger` is available in `commonMain`),
 `kotlin.time` for `Duration`/`Instant`/`Clock` (NOT `java.time` in common —
-`kotlin.time.Instant`/`Clock` are stable in 2.3.x). For HTTP, prefer
+`kotlin.time.Instant`/`Clock` are stable since 2.3.x). For HTTP, prefer
 Ktor/Ktorfit. Testing: `kotlin.test` + Turbine + `kotlinx-coroutines-test` +
 Kotest (property tests). Library code uses **constructor injection only** — no
 Koin/service locator inside `:src`.
