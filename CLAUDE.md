@@ -150,22 +150,25 @@ and detekt failures.
 ## 11. Task workflow (mise)
 
 1. Read this file, then `gradle/libs.versions.toml`, then `.claude/lessons/LESSONS.md`.
-2. Adding a dependency? First hunt for an existing multiplatform one (§5:
+2. Run `mise tasks` to see every command you can execute — it's the task
+   contract. Drive build/test/lint/publish through `mise run <task>`, not raw
+   `./gradlew` or ad-hoc scripts, so humans and agents share one surface.
+3. Adding a dependency? First hunt for an existing multiplatform one (§5:
    official Kotlin/JetBrains → Google official KMP → terrakok/kmp-awesome).
    Then web-search the latest stable; add to the catalog only.
    `mise run dependencies:outdated` lists candidates; `dependencies:update`
    rewrites the catalog (review the diff); `dependencies:analyze` flags unused or
    misdeclared deps (api vs implementation).
-3. Platform-specific? Keep the `expect`/`actual` seam tiny; push logic to common.
-4. Public API crossing to Swift? Apply §7 at design time.
-5. Changed the public API on purpose? `mise run api:dump` and commit the `api/`
+4. Platform-specific? Keep the `expect`/`actual` seam tiny; push logic to common.
+5. Public API crossing to Swift? Apply §7 at design time.
+6. Changed the public API on purpose? `mise run api:dump` and commit the `api/`
    diff (§8) — otherwise `check` fails on the surface change.
-6. Done when `mise run check` passes AND `:src:compileKotlinMacosArm64` /
+7. Done when `mise run check` passes AND `:src:compileKotlinMacosArm64` /
    `compileKotlinIosSimulatorArm64` / `compileAndroidMain` build clean (common-code
    bugs often only surface on Native — the JVM compile is not a sufficient gate).
    `check` also runs the API/ABI check (§8). `mise run build:doctor` surfaces
    build-health diagnostics if a build feels slow or misconfigured.
-7. Learned something non-obvious? Add it to `.claude/lessons/LESSONS.md` (terse).
+8. Learned something non-obvious? Add it to `.claude/lessons/LESSONS.md` (terse).
 
 ## 12. Hard rules
 
