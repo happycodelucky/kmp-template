@@ -62,6 +62,68 @@ doctor {
     disallowMultipleDaemons.set(false)
 }
 
+// dependency-analysis (`mise run dependencies:analyze` → buildHealth). The
+// project plugin is applied per published KMP module in `subprojects {}` below —
+// currently GATED OFF (see that block: DAGP 3.16.0 can't read Kotlin 2.4.0
+// metadata, issue #1724). This `dependencyAnalysis { }` extension is registered
+// by the root plugin (still in `plugins {}`), so the config is valid regardless
+// of the gate and is ready the moment analysis is enabled.
+//
+// KMP analysis at dependency-analysis 3.16.0 is real but noisy on modules with
+// SHARED (hierarchical) source sets — a dependency declared once in commonMain
+// is *visible* in the jvm/android/apple leaf sets, and the plugin's per-leaf
+// analysis emits advice that contradicts the common-set declaration. Two whole
+// categories are unreliable here and are silenced; a third is narrowed:
+//
+//   * usedTransitiveDependencies → ignore. The plugin wants curated single deps
+//     (e.g. kermit's internal kermit-core, and the :src project dep) "declared
+//     directly" in every leaf set; splitting them into transitive internals
+//     would churn the catalog (CLAUDE.md §5). Always wrong here.
+//   * incorrectConfiguration → ignore. The api-vs-implementation over-suggestion
+//     (kotlinx.coroutines.core) is the known KMP DAGP issue #1700 — kept as
+//     `implementation` by design.
+//   * runtimeOnly → ignore. compile→runtimeOnly downgrades (e.g.
+//     coroutines-android, whose Android MainDispatcherFactory loads via
+//     ServiceLoader at runtime) — kept as the conventional `implementation`.
+//   * unusedDependencies → kept at `warn` (so a genuinely-unused NEW dependency
+//     still surfaces) but the project refs + kotest are excluded: the test fakes
+//     and the kotest property arbs ARE used in commonTest/jvmTest/androidHostTest,
+//     but DAGP under-detects cross-source-set test usage on KMP (issue #1345).
+//
+// NOTE (template): this exclude list is derived from this repo's leaner graph.
+// When DAGP is enabled, RUN buildHealth and confirm the exclude list still
+// matches — a rendered project that adds deps (ktor, serialization, etc.) may
+// surface new coordinates to exclude.
+dependencyAnalysis {
+    issues {
+        all {
+            onUsedTransitiveDependencies {
+                severity("ignore")
+            }
+            // implementation↔api swaps. The api over-suggestion on
+            // kotlinx.coroutines.core is the known KMP DAGP issue #1700.
+            onIncorrectConfiguration {
+                severity("ignore")
+            }
+            // compile→runtimeOnly downgrades (a SEPARATE handler from
+            // onIncorrectConfiguration — verified against DAGP 3.16.0's DSL).
+            onRuntimeOnly {
+                severity("ignore")
+            }
+            onUnusedDependencies {
+                exclude(
+                    // The test fakes + kotest property arbs ARE used in
+                    // commonTest/jvmTest/androidHostTest, but DAGP under-detects
+                    // cross-source-set test usage on KMP (issue #1345).
+                    ":src",
+                    ":src-testing",
+                    "io.kotest:kotest-assertions-core",
+                )
+            }
+        }
+    }
+}
+
 subprojects {
     // ktlint + detekt wire onto the KMP plugin — i.e. onto the published
     // library modules only (CLAUDE.md §3). The sample apps (`:androidApp`,
@@ -70,6 +132,27 @@ subprojects {
     pluginManager.withPlugin("org.jetbrains.kotlin.multiplatform") {
         apply(plugin = "org.jlleitschuh.gradle.ktlint")
         apply(plugin = "io.gitlab.arturbosch.detekt")
+        // dependency-analysis's project plugin does NOT auto-apply from the root
+        // `plugins {}` block (only the `com.autonomousapps.build-health` settings
+        // plugin fans out) — without a per-module apply, `buildHealth` runs but
+        // analyzes ZERO projects ("No project health reports found"). Applying it
+        // to the published KMP modules only (alongside ktlint/detekt) makes
+        // buildHealth actually inspect `:src` / `:src-testing`; the advice is then
+        // tuned in the root `dependencyAnalysis { }` block below.
+        //
+        // GATED OFF by default. dependency-analysis 3.16.0 bundles a
+        // kotlin-metadata-jvm that cannot read Kotlin 2.4.0's bytecode metadata
+        // (format 2.4.0 > its max 2.3.0): applying it makes `explodeJar*` — and
+        // therefore `buildHealth` — HARD-FAIL, not merely report noise. Upstream
+        // issue: https://github.com/autonomousapps/dependency-analysis-gradle-plugin/issues/1724
+        // (open as of 2026-06). Flip on with `-PenableDependencyAnalysis=true`
+        // once DAGP ships a Kotlin-2.4.0-compatible release (then also re-enable
+        // the `dependencies:analyze` step in .github/workflows/ci.yml and verify
+        // the exclude list below still matches this repo's graph). Until then the
+        // wiring stays inert so CI is green rather than red.
+        if (providers.gradleProperty("enableDependencyAnalysis").orNull == "true") {
+            apply(plugin = "com.autonomousapps.dependency-analysis")
+        }
     }
 
     plugins.withId("org.jlleitschuh.gradle.ktlint") {

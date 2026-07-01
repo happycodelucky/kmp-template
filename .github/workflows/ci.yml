@@ -43,14 +43,21 @@ jobs:
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
 
-      # Lint + detekt + JVM/Android tests + dependency hygiene. No Apple targets
-      # here — those need a Mac and run in the `apple` job.
-      - name: Lint, JVM + Android tests, dependency analysis
+      # Lint + detekt + JVM/Android tests. No Apple targets here — those need a
+      # Mac and run in the `apple` job.
+      #
+      # `mise run dependencies:analyze` (buildHealth) is intentionally OMITTED:
+      # dependency-analysis 3.16.0 can't read Kotlin 2.4.0's bytecode metadata, so
+      # analysis is gated off in build.gradle.kts (see the `enableDependencyAnalysis`
+      # gate + DAGP issue #1724). With the gate off it's a no-op; running it here
+      # would only imply a hygiene check that isn't happening. Re-add the line
+      # below (and flip the build.gradle.kts gate on) once DAGP supports 2.4.0.
+      - name: Lint, JVM + Android tests
         run: |
           mise run lint
           mise run test:jvm
           mise run test:android
-          mise run dependencies:analyze
+          # mise run dependencies:analyze   # re-enable with the DAGP gate (issue #1724)
 
       - name: Upload reports on failure
         if: failure()
