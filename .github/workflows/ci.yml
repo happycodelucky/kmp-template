@@ -125,7 +125,12 @@ jobs:
         with:
           name: __DISPLAY_NAME__-${{ steps.version.outputs.VERSION }}.xcframework
           path: src/build/XCFrameworks/release/__FRAMEWORK__.xcframework
-          if-no-files-found: error
+          # `warn` (not `error`) so the UN-RENDERED template repo's own CI stays
+          # green: here __FRAMEWORK__ is a literal token, so the path never
+          # matches and the build produces Src.xcframework instead. `mise run
+          # init` flips this to `error` in the rendered project, where the path
+          # resolves and a missing artifact is a real failure.
+          if-no-files-found: warn
 
       - name: Upload test reports on failure
         if: failure()

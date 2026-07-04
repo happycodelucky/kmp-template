@@ -68,6 +68,16 @@ mise tasks             # full task list
 See [`CLAUDE.md`](CLAUDE.md) for conventions and [`CONTRIBUTING.md`](CONTRIBUTING.md)
 to get started.
 
+### One-time CI setup
+
+- **GitHub Pages (docs site):** the Docs workflow deploys `docs/` to Pages. It
+  auto-enables Pages on first run (`configure-pages` with `enablement: true`),
+  which needs **Settings → Actions → General → Workflow permissions → Read and
+  write**. If your org blocks auto-enablement, enable it manually:
+  **Settings → Pages → Source: GitHub Actions**.
+- **Releases:** set the four Maven Central credentials on the
+  `continuous-deployment` environment — see [`.github/PUBLISHING.md`](.github/PUBLISHING.md).
+
 ## License
 
 [Apache 2.0](LICENSE)

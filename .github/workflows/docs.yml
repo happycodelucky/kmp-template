@@ -95,8 +95,15 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
+      # `enablement: true` turns GitHub Pages ON for the repo automatically if
+      # it isn't already, using the GitHub Actions source — so a fresh repo (or
+      # this template repo) doesn't fail the deploy with "Get Pages site failed:
+      # Not Found" before someone manually enables Pages in Settings. Needs the
+      # `pages: write` permission already granted above. See docs/README setup.
       - name: Configure Pages
         uses: actions/configure-pages@v6
+        with:
+          enablement: true
 
       - name: Deploy
         id: deployment

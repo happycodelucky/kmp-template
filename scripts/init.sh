@@ -201,6 +201,7 @@ replace_in_file() {
         -e "s#src-testing/api#$NAME-testing/api#g" \
         -e "s#src/build#$NAME/build#g" \
         -e "s#src/api#$NAME/api#g" \
+        -e "s/if-no-files-found: warn/if-no-files-found: error/g" \
         "$file" > "$tmp"
     # Only overwrite if something changed (keeps mtimes stable otherwise).
     if cmp -s "$file" "$tmp"; then rm -f "$tmp"; else mv "$tmp" "$file"; fi
