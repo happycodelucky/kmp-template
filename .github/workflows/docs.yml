@@ -88,7 +88,15 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     needs: build
-    if: github.event_name != 'pull_request'
+    # Skip the deploy on the un-rendered template repo itself: it has no Pages
+    # site and the workflow token can't create one (org/repo Actions permissions
+    # aren't the template's to set). The `build` job above still runs, so the
+    # docs site + docs/check.py are validated on every push. A rendered project
+    # has a different `github.repository`, so this condition is false there and
+    # the deploy runs normally (once that repo enables Pages — see README).
+    if: >-
+      github.event_name != 'pull_request' &&
+      github.repository != 'happycodelucky/kmp-template'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
