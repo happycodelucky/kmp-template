@@ -3,10 +3,24 @@
 A repeatable audit for a Kotlin Multiplatform repo's build tooling. Written to be
 copied between repos — nothing here is specific to one project.
 
-Derived from a real audit of this template (2026-07-30). Three of the seven
-findings were tooling that had **silently stopped working** while still looking
-configured. That's the theme: the expensive bugs aren't wrong versions, they're
-things that report success while doing nothing.
+Derived from a real audit of this template (2026-07-30), then applied to two
+sibling repos. Three of the eight findings were tooling that had **silently
+stopped working** while still looking configured. That's the theme: the expensive
+bugs aren't wrong versions, they're things that report success while doing
+nothing — or guards that were never wired up at all.
+
+**Using this across repos.** Treat §2 as a checklist where *"not applicable"* is
+an answer you **verify**, not one you assume. Applying it to two sibling repos,
+one matched 6 of 8 patterns and the other only 2 — but the non-matches were worth
+the check: in one repo a pattern looked inapplicable (the tool was already
+un-gated) while the underlying version bump was still *required*, because the old
+version hard-failed on the new compiler metadata and would have taken CI down
+alongside the Kotlin bump.
+
+Also expect the fix to be **repo-shaped**. Don't copy config between repos
+wholesale: tuning derived from one repo's observed output is cargo-culting
+somewhere else, and lesson-file ID schemes collide (one repo's `N-` prefix meant
+"Notes", another's meant "NEVER DO"). Port the *finding*, re-derive the *fix*.
 
 ---
 
@@ -212,6 +226,40 @@ from a clean bill of health.
 happened, so an up-to-date tree yields little — run after a clean or a real
 change.
 
+### H. A guard that was never there
+
+**Symptom.** Not drift — *absence*. A repo publishes artifacts to a public
+registry but has no public-API/ABI validation at all: no checked-in dump, no
+check task, nothing to fail when a rename or a removed function ships. Every
+other pattern here is "something stopped working"; this one never started, so
+there's no stale comment or warning to trip over. Reading a diff will never
+surface it. Only comparing the repo against a checklist will.
+
+Found exactly this in a sibling repo: two modules published to Maven Central via
+vanniktech, zero `abiValidation` blocks, zero `api/` dumps, zero ABI tasks.
+
+**Detection.** Ask the two questions together — publishing without a guard is the
+red flag, not either fact alone:
+
+```bash
+# 1. Does it publish?
+grep -rln 'mavenPublishing\|publishToMavenCentral' --include='*.kts' .
+# 2. Is the public surface guarded?
+grep -rn 'abiValidation' --include='*.kts' . ; ls -d */api 2>/dev/null
+./gradlew tasks --all -q 2>&1 | grep -ic 'checkKotlinAbi\|checkLegacyAbi'
+```
+
+A published repo answering "yes" to 1 and "nothing" to 2 has an unguarded public
+API.
+
+**Fix.** Add `abiValidation { }` in the convention plugin, run the dump task, and
+commit the baseline. Review that first dump as carefully as any code — it is the
+reference everything afterwards is compared against.
+
+**Generalise the question.** For any guard a sibling repo has, ask whether *this*
+repo has it: API/ABI validation, lint on every source set, a multi-target check
+rather than JVM-only, the packaging artifact built in CI.
+
 ---
 
 ## 3. Ordering and commit discipline
@@ -296,8 +344,32 @@ entry) in the same commit, and group them in Renovate so they can't drift.
   unused scaffolding; that advice is correct and clears itself.
 - **DAGP's `AGP_MAX` lags the AGP release train**, producing an advisory warning
   on current AGP. Verify equivalent output and document the choice.
+- **Crossing Kotlin 2.3 → 2.4 removes `abiValidation.enabled`.** Presence of the
+  `abiValidation { }` block is now what enables validation. `enabled.set(true)`
+  is a build-logic compile error and easy to fix — but a module that opted *out*
+  with `enabled.set(false)` has **no replacement**, because there's no longer a
+  property to say "off". The only way to exempt a module is for the convention
+  plugin not to call the block for it, e.g. a `modulesWithoutAbiValidation` set.
+  After changing this, prove the outcome from the task graph — the failure mode
+  is silently dropping validation from a *published* module, which looks exactly
+  like success:
+
+  ```bash
+  ./gradlew :lib:check :lib-testing:check --dry-run | grep -i KotlinAbi
+  ```
+
+- **A minor Kotlin bump is a different risk class from a patch.** 2.4.0 → 2.4.10
+  keeps the language version; 2.3.x → 2.4.x changes it, needs
+  `languageVersion`/`apiVersion` updated, and can remove APIs your build logic
+  uses. Raising `apiVersion` also **raises the Kotlin floor for consumers** of
+  published artifacts — a consumer-visible change the other bumps aren't, worth
+  calling out explicitly rather than folding into a version-bump commit.
 - **A JVM-only test run is not a gate.** Native compile and lint failures hide
   there. The gate is the full multi-target `check`.
+- **Confirm a "rebuild" actually rebuilt.** Gradle's caching makes a green run
+  meaningless as evidence. If a verification finishes suspiciously fast, re-run
+  with `--rerun-tasks --no-build-cache` and check the executed-task count and
+  that the compile/link tasks are in it.
 - **Prove the ABI check actually runs** rather than assuming `check` depends on
   it — see §2.D's `--dry-run` graph inspection.
 - **After a compiler/SKIE bump, build the XCFramework too.** `check` doesn't
@@ -311,12 +383,15 @@ entry) in the same commit, and group them in Renovate so they can't drift.
 ```
 [ ] Every gate/flag disabling a tool re-checked against its upstream issue
 [ ] Every commented-out CI step re-evaluated
+[ ] If the repo publishes: public API/ABI validation EXISTS (pattern H)
+[ ] Each "not applicable" pattern verified, not assumed
 [ ] Build log read for deprecation / renamed-id / "at your own risk" warnings
 [ ] Renovate (or equivalent) config validated against a CURRENT major
 [ ] Matchers checked for prefix over-match across sibling namespaces
 [ ] Versions confirmed from registries, not from memory or search
 [ ] Compiler/language bump isolated in its own commit
-[ ] Full multi-target check run cold, not from cache — record the timing
+[ ] Minor (not patch) Kotlin bump: language/apiVersion updated; consumer floor change called out
+[ ] Full multi-target check run cold, not from cache — executed-task count checked
 [ ] Framework/packaging artifact built after any compiler or interop bump
 [ ] Public API/ABI dump diffed (no unintended surface change)
 [ ] Template repos: test-rendered into a scratch copy, asserted no token leaks
