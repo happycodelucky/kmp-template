@@ -228,21 +228,25 @@ tasks.register<Copy>("copyDokkaToDocs") {
 // (the report) and `dependencies:update` (version-catalog-update consumes the
 // same dependencyUpdates output).
 //
-// A version is considered STABLE only if it has no pre-release qualifier.
-// Matches: 1.2.3, 2026.06.00, 1.2.3.4. Rejects: -alpha/-beta/-rc/-eap/-m1/
-// -snapshot/-dev/-preview (any case, with or without a separator).
+// A version is considered STABLE only if it is digits-and-dots and nothing else.
+// Accepts: 1.2.3, 2026.06.01, 1.2.3.4. Rejects everything carrying a qualifier —
+// -alpha/-beta/-rc/-eap/-m1/-snapshot/-dev/-preview, any case, separator or not —
+// because a qualifier necessarily introduces a non-digit, non-dot character.
+//
+// That whitelist IS the whole stability test, so there is deliberately no second
+// "does it look like a pre-release?" regex: no string can satisfy this pattern
+// and still contain an alphabetic qualifier, so such a check would be
+// unreachable. If you ever loosen this pattern (e.g. to allow a `-jre`-style
+// classifier), you must add the qualifier check back — it is load-bearing only
+// in that world.
 val stableVersion = "^[0-9][0-9.]*$".toRegex()
-val preReleaseQualifier =
-    "(?i)[.\\-]?(alpha|beta|rc|cr|m|eap|snapshot|dev|preview|pre|b)[.\\-]?[0-9]*$|(?i)(snapshot)".toRegex()
 
 tasks.withType<DependencyUpdatesTask>().configureEach {
     // Read the stable release channel, not integration/milestone metadata.
     revision = "release"
     rejectVersionIf {
-        // Reject a candidate that isn't a clean stable version, OR carries a
-        // pre-release qualifier. The current version is never rejected here —
-        // ben-manes only feeds candidate upgrades through this predicate.
-        !stableVersion.matches(candidate.version) ||
-            preReleaseQualifier.containsMatchIn(candidate.version)
+        // The current version is never rejected here — ben-manes only feeds
+        // candidate upgrades through this predicate.
+        !stableVersion.matches(candidate.version)
     }
 }
