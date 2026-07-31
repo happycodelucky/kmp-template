@@ -23,7 +23,7 @@
 
 [tools]
 java     = "temurin-21"   # JDK 21 LTS, Apple Silicon aarch64.
-gradle   = "9.5.1"        # Matches gradle/wrapper/gradle-wrapper.properties.
+gradle   = "9.6.1"        # Matches gradle/wrapper/gradle-wrapper.properties.
 python   = "3.12"         # mkdocs toolchain (docs:* tasks).
 xcodegen = "latest"       # apps/ios + apps/macos project generation.
 gh       = "latest"       # release.yml uses gh.
