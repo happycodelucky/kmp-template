@@ -63,61 +63,68 @@ doctor {
 }
 
 // dependency-analysis (`mise run dependencies:analyze` → buildHealth). The
-// project plugin is applied per published KMP module in `subprojects {}` below —
-// currently GATED OFF (see that block: DAGP 3.16.0 can't read Kotlin 2.4.0
-// metadata, issue #1724). This `dependencyAnalysis { }` extension is registered
-// by the root plugin (still in `plugins {}`), so the config is valid regardless
-// of the gate and is ready the moment analysis is enabled.
+// project plugin is applied per published KMP module in `subprojects {}` below.
 //
-// KMP analysis at dependency-analysis 3.16.0 is real but noisy on modules with
-// SHARED (hierarchical) source sets — a dependency declared once in commonMain
-// is *visible* in the jvm/android/apple leaf sets, and the plugin's per-leaf
-// analysis emits advice that contradicts the common-set declaration. Two whole
-// categories are unreliable here and are silenced; a third is narrowed:
+// KMP analysis is real but still noisy on modules with SHARED (hierarchical)
+// source sets — a dependency declared once in commonMain is *visible* in the
+// jvm/android/apple leaf sets, and the plugin's per-leaf analysis emits advice
+// that contradicts the common-set declaration. The tuning below was derived by
+// RUNNING buildHealth on this repo at DAGP 3.18.0, not copied forward:
 //
-//   * usedTransitiveDependencies → ignore. The plugin wants curated single deps
-//     (e.g. kermit's internal kermit-core, and the :src project dep) "declared
-//     directly" in every leaf set; splitting them into transitive internals
-//     would churn the catalog (CLAUDE.md §5). Always wrong here.
-//   * incorrectConfiguration → ignore. The api-vs-implementation over-suggestion
-//     (kotlinx.coroutines.core) is the known KMP DAGP issue #1700 — kept as
-//     `implementation` by design.
-//   * runtimeOnly → ignore. compile→runtimeOnly downgrades (e.g.
-//     coroutines-android, whose Android MainDispatcherFactory loads via
-//     ServiceLoader at runtime) — kept as the conventional `implementation`.
-//   * unusedDependencies → kept at `warn` (so a genuinely-unused NEW dependency
-//     still surfaces) but the project refs + kotest are excluded: the test fakes
-//     and the kotest property arbs ARE used in commonTest/jvmTest/androidHostTest,
-//     but DAGP under-detects cross-source-set test usage on KMP (issue #1345).
+//   * usedTransitiveDependencies → ignore. Structurally wrong on hierarchical
+//     KMP. It wants curated single deps re-declared in every leaf set —
+//     kermit's internal `kermit-core` in androidMain/jvmMain, `kotlin-test-junit`
+//     in every JVM-ish test set, `project(":src")` in jvmTest. Splitting curated
+//     deps into their transitive internals would churn the catalog (CLAUDE.md §5).
+//   * incorrectConfiguration → warn. RE-ENABLED. The api-vs-implementation
+//     over-suggestion on kotlinx.coroutines.core (DAGP issue #1700) was fixed in
+//     3.16.1 ("don't advise moving a dependency from commonMainApi to
+//     jvmMainApi"); this category now reports nothing on this repo, so silencing
+//     it would only hide future real advice.
+//   * runtimeOnly → warn, with ONE exclusion rather than a blanket ignore.
+//     coroutines-android is compile-invisible because its MainDispatcherFactory
+//     loads via ServiceLoader — kept as the conventional `implementation`.
+//     Narrowing to that single coordinate keeps the category live for new deps.
+//   * unusedDependencies → warn, excluding only the deps whose purpose DAGP
+//     structurally cannot see. Those are the wiring, not ordinary libraries:
+//       - `co.touchlab:kermit` — the convention plugin injects it into every
+//         module on purpose, so `Logger` is available in commonMain whether or
+//         not that module logs today (CLAUDE.md §5).
+//       - `:src` — `:src-testing` declares it as `api` to re-export the public
+//         types transitively to consumers writing `testImplementation(…-testing)`
+//         (see src-testing/build.gradle.kts). A deliberate re-export reads as
+//         "unused" to a compile-usage analysis, permanently.
+//       - `:src-testing` — the fakes are consumed from `:src`'s test source sets;
+//         DAGP under-detects cross-source-set test usage on KMP (issue #1345).
 //
-// NOTE (template): this exclude list is derived from this repo's leaner graph.
-// When DAGP is enabled, RUN buildHealth and confirm the exclude list still
-// matches — a rendered project that adds deps (ktor, serialization, etc.) may
-// surface new coordinates to exclude.
+// NOTE (template): turbine, kotest-assertions-core, kotest-property and atomicfu
+// WILL be reported as unused until you replace the placeholder `Greeter` with
+// real code. That advice is CORRECT — they're scaffolding for the library you
+// haven't written yet — and it clears itself as you start using them.
+// Deliberately NOT excluded: a permanent exclusion would also hide the case
+// where you genuinely never use them. These are warnings; buildHealth exits 0,
+// so CI stays green either way.
 dependencyAnalysis {
     issues {
         all {
             onUsedTransitiveDependencies {
                 severity("ignore")
             }
-            // implementation↔api swaps. The api over-suggestion on
-            // kotlinx.coroutines.core is the known KMP DAGP issue #1700.
             onIncorrectConfiguration {
-                severity("ignore")
+                severity("warn")
             }
             // compile→runtimeOnly downgrades (a SEPARATE handler from
-            // onIncorrectConfiguration — verified against DAGP 3.16.0's DSL).
+            // onIncorrectConfiguration — verified against DAGP 3.18.0's DSL).
             onRuntimeOnly {
-                severity("ignore")
+                severity("warn")
+                exclude("org.jetbrains.kotlinx:kotlinx-coroutines-android")
             }
             onUnusedDependencies {
+                severity("warn")
                 exclude(
-                    // The test fakes + kotest property arbs ARE used in
-                    // commonTest/jvmTest/androidHostTest, but DAGP under-detects
-                    // cross-source-set test usage on KMP (issue #1345).
+                    "co.touchlab:kermit",
                     ":src",
                     ":src-testing",
-                    "io.kotest:kotest-assertions-core",
                 )
             }
         }
@@ -140,19 +147,14 @@ subprojects {
         // buildHealth actually inspect `:src` / `:src-testing`; the advice is then
         // tuned in the root `dependencyAnalysis { }` block below.
         //
-        // GATED OFF by default. dependency-analysis 3.16.0 bundles a
-        // kotlin-metadata-jvm that cannot read Kotlin 2.4.0's bytecode metadata
-        // (format 2.4.0 > its max 2.3.0): applying it makes `explodeJar*` — and
-        // therefore `buildHealth` — HARD-FAIL, not merely report noise. Upstream
-        // issue: https://github.com/autonomousapps/dependency-analysis-gradle-plugin/issues/1724
-        // (open as of 2026-06). Flip on with `-PenableDependencyAnalysis=true`
-        // once DAGP ships a Kotlin-2.4.0-compatible release (then also re-enable
-        // the `dependencies:analyze` step in .github/workflows/ci.yml and verify
-        // the exclude list below still matches this repo's graph). Until then the
-        // wiring stays inert so CI is green rather than red.
-        if (providers.gradleProperty("enableDependencyAnalysis").orNull == "true") {
-            apply(plugin = "com.autonomousapps.dependency-analysis")
-        }
+        // This used to be gated behind `-PenableDependencyAnalysis=true`: DAGP
+        // 3.16.0 bundled a kotlin-metadata-jvm that could not read Kotlin 2.4.0
+        // bytecode metadata (format 2.4.0 > its max 2.3.0), so applying it made
+        // `explodeJar*` — and therefore `buildHealth` — HARD-FAIL. Fixed in
+        // 3.18.0, which isolates kotlin-metadata-jvm into workers
+        // (autonomousapps/dependency-analysis-gradle-plugin#1724, closed
+        // 2026-06-04). The gate is gone and CI runs `dependencies:analyze` again.
+        apply(plugin = "com.autonomousapps.dependency-analysis")
     }
 
     plugins.withId("org.jlleitschuh.gradle.ktlint") {

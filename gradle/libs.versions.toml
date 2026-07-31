@@ -47,9 +47,12 @@ versionCatalogUpdate = "1.1.0"
 # --- Build health / dependency hygiene --------------------------------------
 # dependency-analysis: flags unused deps, api-vs-implementation misuse, and
 # transitive deps you rely on directly. Run via `mise run dependencies:analyze`.
+# 3.18.0 is the first release that reads Kotlin 2.4.0 bytecode metadata (it
+# isolates kotlin-metadata-jvm into workers) — 3.16.0 hard-failed `explodeJar`
+# on it, which is why analysis used to be gated off. Upstream issue #1724.
 # gradle-doctor: build-health warnings (slow config, JVM mismatches, cache
 # misses).
-dependencyAnalysis = "3.16.0"
+dependencyAnalysis = "3.18.0"
 gradleDoctor = "0.12.1"
 
 # --- Android SDK ------------------------------------------------------------
