@@ -21,13 +21,20 @@
 [versions]
 
 # --- Toolchain --------------------------------------------------------------
-# Kotlin 2.4.0 is the highest version SKIE 0.10.13 supports. CLAUDE.md §3:
+# Kotlin 2.4.10 is the highest version SKIE 0.10.14 supports. CLAUDE.md §3:
 # "If SKIE doesn't yet support a Kotlin version, we wait. Don't bump Kotlin
 # past SKIE's supported range." This is a paired bump — verify SKIE's changelog
 # states support for the target Kotlin before raising either pin.
-kotlin = "2.4.0"
-agp = "9.2.1"                  # com.android.kotlin.multiplatform.library variant.
-skie = "0.10.13"               # Supports Kotlin 2.4.0 (changelog 2026-06-24).
+# (2.4.20 exists only as Beta as of this pin, so it's out under the no-pre-release
+# rule regardless of what SKIE supports.)
+kotlin = "2.4.10"
+# com.android.kotlin.multiplatform.library variant.
+# NOTE: dependency-analysis prints "only known to work with AGP between 8.10.0
+# and 9.2.1 … proceed at your own risk" from 9.3.0 on — its AGP_MAX simply lags
+# the AGP release train. Advisory only: buildHealth was verified against 9.3.1
+# and produces identical advice. The warning clears when DAGP raises AGP_MAX.
+agp = "9.3.1"
+skie = "0.10.14"               # Adds Kotlin 2.4.10 support (changelog 2026-07-27).
 kmmbridge = "1.2.1"            # XCFramework → GitHub Release asset → SPM (CLAUDE.md §8).
 dokka = "2.2.0"                # Kotlin API doc generator; Dokka v2 task layout.
 # vanniktech's gradle-maven-publish-plugin — publishes signed artifacts to the
@@ -41,15 +48,18 @@ mavenPublish = "0.37.0"
 # ben-manes reports available updates; version-catalog-update consumes that
 # report to rewrite THIS file in place. version-catalog-update REQUIRES the
 # ben-manes plugin to be applied (it reads its dependencyUpdates task output).
-benManesVersions = "0.54.0"
+benManesVersions = "0.57.0"
 versionCatalogUpdate = "1.1.0"
 
 # --- Build health / dependency hygiene --------------------------------------
 # dependency-analysis: flags unused deps, api-vs-implementation misuse, and
 # transitive deps you rely on directly. Run via `mise run dependencies:analyze`.
+# 3.18.0 is the first release that reads Kotlin 2.4.0 bytecode metadata (it
+# isolates kotlin-metadata-jvm into workers) — 3.16.0 hard-failed `explodeJar`
+# on it, which is why analysis used to be gated off. Upstream issue #1724.
 # gradle-doctor: build-health warnings (slow config, JVM mismatches, cache
 # misses).
-dependencyAnalysis = "3.16.0"
+dependencyAnalysis = "3.18.0"
 gradleDoctor = "0.12.1"
 
 # --- Android SDK ------------------------------------------------------------
@@ -73,12 +83,12 @@ kermit = "2.1.0"
 # --- Sample-app deps (apps/android only — iOS/macOS consume via SPM) ---------
 androidx-activity-compose = "1.13.0"
 androidx-lifecycle-runtime-compose = "2.11.0"
-androidx-compose-bom = "2026.06.00"
+androidx-compose-bom = "2026.06.01"
 
 # --- Testing ----------------------------------------------------------------
 turbine = "1.2.1"
 # Kotest — assertions + property engine only; runner is kotlin.test (CLAUDE.md §10).
-kotest = "6.2.1"
+kotest = "6.2.3"
 
 # --- Lint ------------------------------------------------------------------
 ktlint = "1.8.0"               # The ktlint tool itself.
@@ -152,7 +162,10 @@ kmmbridge-github = { id = "co.touchlab.kmmbridge.github", version.ref = "kmmbrid
 # Vanniktech Maven Publish — Maven Central Portal upload + GPG signing.
 maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
 # Dependency-update tooling (mise dependencies:outdated / dependencies:update).
-ben-manes-versions = { id = "com.github.ben-manes.versions", version.ref = "benManesVersions" }
+# Plugin id moved to the `io.github` namespace; the old `com.github.…` id still
+# resolves but warns on every configuration. The Java package (and therefore the
+# `DependencyUpdatesTask` import in the root build script) is unchanged.
+ben-manes-versions = { id = "io.github.ben-manes.versions", version.ref = "benManesVersions" }
 version-catalog-update = { id = "nl.littlerobots.version-catalog-update", version.ref = "versionCatalogUpdate" }
 # Build-health tooling (mise dependencies:analyze / build:doctor).
 dependency-analysis = { id = "com.autonomousapps.dependency-analysis", version.ref = "dependencyAnalysis" }

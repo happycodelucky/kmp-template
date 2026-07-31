@@ -15,9 +15,14 @@ concurrency:
 
 jobs:
   # --- Fast leg: everything that doesn't need a Mac ---------------------------
-  # commonTest runs on the JVM without a simulator/Xcode, so the bulk of the
-  # suite — lint, detekt, JVM + Android tests, the JVM API check, and dependency
-  # hygiene — runs here on cheap Ubuntu in ~2–3 min and fails fast.
+  # commonTest runs on the JVM without a simulator/Xcode, so the cheap half of
+  # the suite — ktlint, detekt, and the JVM + Android test targets — runs here
+  # on Ubuntu in ~2–3 min and fails fast.
+  #
+  # NOT run here (both need a Mac and live in the `apple` job): the Apple test
+  # targets, and the public-API/ABI check. `checkKotlinAbi` validates every
+  # target from one dump — including the JVM surface — so running it on the
+  # macOS leg covers the JVM API too; there's no gap, just no duplication.
   fast:
     name: Lint + JVM/Android tests
     runs-on: ubuntu-latest
@@ -46,18 +51,16 @@ jobs:
       # Lint + detekt + JVM/Android tests. No Apple targets here — those need a
       # Mac and run in the `apple` job.
       #
-      # `mise run dependencies:analyze` (buildHealth) is intentionally OMITTED:
-      # dependency-analysis 3.16.0 can't read Kotlin 2.4.0's bytecode metadata, so
-      # analysis is gated off in build.gradle.kts (see the `enableDependencyAnalysis`
-      # gate + DAGP issue #1724). With the gate off it's a no-op; running it here
-      # would only imply a hygiene check that isn't happening. Re-add the line
-      # below (and flip the build.gradle.kts gate on) once DAGP supports 2.4.0.
+      # `dependencies:analyze` (buildHealth) reports dependency-hygiene advice as
+      # WARNINGS and exits 0 — it surfaces the report in the log without gating
+      # the merge. Every category that misfires on hierarchical KMP source sets is
+      # tuned in the root build.gradle.kts; read the advice, don't apply it blindly.
       - name: Lint, JVM + Android tests
         run: |
           mise run lint
           mise run test:jvm
           mise run test:android
-          # mise run dependencies:analyze   # re-enable with the DAGP gate (issue #1724)
+          mise run dependencies:analyze
 
       - name: Upload reports on failure
         if: failure()
