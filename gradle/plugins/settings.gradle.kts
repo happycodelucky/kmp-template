@@ -1,10 +1,10 @@
 /*
- * ssdp-kmp — gradle/plugins included build.
+ * __PROJECT_NAME__ — gradle/plugins included build.
  *
- * Hosts the precompiled convention plugins (`ssdp.kmp-library`,
- * `ssdp.publish`) that deduplicate the module build scripts. Wired into the
- * main build via `pluginManagement { includeBuild("gradle/plugins") }` in the
- * root settings.gradle.kts.
+ * Hosts the precompiled convention plugins (`__PROJECT_NAME__.kmp-library`,
+ * `__PROJECT_NAME__.publish`) that deduplicate the module build scripts. Wired
+ * into the main build via `pluginManagement { includeBuild("gradle/plugins") }`
+ * in the root settings.gradle.kts.
  */
 
 pluginManagement {
@@ -35,7 +35,7 @@ dependencyResolutionManagement {
     }
     versionCatalogs {
         // Share the main build's catalog so plugin versions stay single-sourced
-        // in gradle/libs.versions.toml (CLAUDE.md §10).
+        // in gradle/libs.versions.toml (CLAUDE.md §3).
         create("libs") {
             from(files("../../gradle/libs.versions.toml"))
         }
