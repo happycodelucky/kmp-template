@@ -22,8 +22,11 @@
 # supports.
 
 [tools]
-java     = "temurin-21"   # JDK 21 LTS, Apple Silicon aarch64.
-gradle   = "9.6.1"        # Matches gradle/wrapper/gradle-wrapper.properties.
+# JDK 21 LTS, Apple Silicon aarch64. The BUILD JDK only — bytecode level is the
+# catalog's `jvm-target`. Not 25 yet: detekt 1.23.8's embedded Kotlin compiler
+# crashes on JDK 25 (detekt/detekt#8714, fixed only in the 2.x alphas).
+java     = "temurin-21"
+gradle   = "9.7.1"        # Matches gradle/wrapper/gradle-wrapper.properties.
 python   = "3.14"         # mkdocs toolchain (docs:* tasks).
 xcodegen = "latest"       # apps/ios + apps/macos project generation.
 gh       = "latest"       # release.yml uses gh.

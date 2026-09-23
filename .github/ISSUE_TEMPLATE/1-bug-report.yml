@@ -48,7 +48,7 @@ body:
     attributes:
       label: Toolchain
       description: Kotlin / Gradle / Xcode / JDK versions, as relevant. See gradle/libs.versions.toml for the pins you built against.
-      placeholder: "e.g. Kotlin 2.3.21, Gradle 9.5.1, Xcode 26, JDK 21"
+      placeholder: "e.g. Kotlin 2.4.10, Gradle 9.7.1, Xcode 26.4, JDK 21"
     validations:
       required: false
 

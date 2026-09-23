@@ -28,13 +28,17 @@
 # Kotlin 2.4.20 went stable 2026-09-07, but SKIE's `versionSupport.kotlin` still
 # ends at 2.4.0(2.4.10); 2.4.20 support is open as touchlab/SKIE#205. Pinned by
 # the VCU `pin {}` in the root build script so dependencies:update can't bump it.
+# NOTE: KGP 2.4.10 is only *fully* supported up to Gradle 9.5.0 / AGP 9.1.0;
+# the Gradle and AGP pins here run ahead of that (AGP 9.4 requires Gradle
+# ≥ 9.6.0). Verified by the full check, not by the compatibility table — the
+# gap closes when SKIE unlocks 2.4.20 (supported up to Gradle 9.7.0).
 kotlin = "2.4.10"
-# com.android.kotlin.multiplatform.library variant.
-# NOTE: dependency-analysis prints "only known to work with AGP between 8.10.0
-# and 9.2.1 … proceed at your own risk" from 9.3.0 on — its AGP_MAX simply lags
-# the AGP release train. Advisory only: buildHealth was verified against 9.3.1
-# and produces identical advice. The warning clears when DAGP raises AGP_MAX.
-agp = "9.3.1"
+# com.android.kotlin.multiplatform.library variant. AGP 9.4 supports up to API 37.
+# NOTE: dependency-analysis 3.19.2 prints "only known to work with AGP between
+# 8.10.0 and 9.3.1 … proceed at your own risk" on 9.4.x — its AGP_MAX simply lags
+# the AGP release train. Advisory only; the warning clears when DAGP raises
+# AGP_MAX.
+agp = "9.4.1"
 # Latest release; 0.10.14 added Kotlin 2.4.10 support (changelog 2026-07-27).
 skie = "0.10.14"
 # XCFramework → GitHub Release asset → SPM (CLAUDE.md §8).
@@ -69,7 +73,10 @@ dependencyAnalysis = "3.19.2"
 gradleDoctor = "0.12.1"
 
 # --- Android SDK ------------------------------------------------------------
-android-compile-sdk = "36"
+# API 37 = Android 17. A floor, not a preference: AndroidX Compose 1.12 and
+# Lifecycle 2.11 AARs declare minCompileSdk=37 in their aar-metadata, which
+# AGP's checkAarMetadata enforces on the sample app.
+android-compile-sdk = "37"
 # arm64-v8a only (CLAUDE.md §4).
 android-min-sdk = "30"
 jvm-target = "21"
@@ -90,7 +97,7 @@ kermit = "2.2.0"
 # --- Sample-app deps (apps/android only — iOS/macOS consume via SPM) ---------
 androidx-activity-compose = "1.13.0"
 androidx-lifecycle-runtime-compose = "2.11.0"
-androidx-compose-bom = "2026.06.01"
+androidx-compose-bom = "2026.09.00"
 
 # --- Testing ----------------------------------------------------------------
 turbine = "1.2.1"
