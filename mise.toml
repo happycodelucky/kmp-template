@@ -72,6 +72,14 @@ run = "./gradlew :src:assembleAndroidMain"
 description = "Compile + jar the JVM desktop/server target."
 run = "./gradlew :src:jvmJar"
 
+[tasks."build:samples"]
+description = "Build the Gradle sample apps (Android debug APK + JVM CLI) — `check` never builds them."
+# The samples are excluded from lint/check (demo scaffolding, not shipped code),
+# but they must still COMPILE: AndroidX AARs impose compileSdk floors
+# (aar-metadata minCompileSdk) that only an app build enforces. CI's fast leg
+# runs this. See .claude/lessons/LESSONS.md N-006.
+run = "./gradlew :androidApp:assembleDebug :jvm-cli:build"
+
 [tasks."build:xcframework"]
 description = "Build the release XCFramework (all slices — iosArm64, iosSimulatorArm64, macosArm64)."
 run = "./gradlew :src:assembleSrcXCFramework"

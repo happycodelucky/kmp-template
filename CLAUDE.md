@@ -172,6 +172,8 @@ and detekt failures.
 7. Done when `mise run check` passes AND `:src:compileKotlinMacosArm64` /
    `compileKotlinIosSimulatorArm64` / `compileAndroidMain` build clean (common-code
    bugs often only surface on Native — the JVM compile is not a sufficient gate).
+   `check` never builds the sample apps — `mise run build:samples` does (CI's
+   fast leg runs it); it's what catches AndroidX compileSdk floors (LESSONS N-006).
    `check` also runs the API/ABI check (§8). `mise run build:doctor` surfaces
    build-health diagnostics if a build feels slow or misconfigured.
 8. Learned something non-obvious? Add it to `.claude/lessons/LESSONS.md` (terse).

@@ -55,11 +55,16 @@ jobs:
       # WARNINGS and exits 0 — it surfaces the report in the log without gating
       # the merge. Every category that misfires on hierarchical KMP source sets is
       # tuned in the root build.gradle.kts; read the advice, don't apply it blindly.
+      #
+      # `build:samples` compiles the Android + JVM sample apps. They're outside
+      # `check`, but an AndroidX bump can raise the compileSdk floor they need
+      # (aar-metadata minCompileSdk) — only an app build notices.
       - name: Lint, JVM + Android tests
         run: |
           mise run lint
           mise run test:jvm
           mise run test:android
+          mise run build:samples
           mise run dependencies:analyze
 
       - name: Upload reports on failure
