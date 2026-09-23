@@ -29,9 +29,12 @@ make them (terse, one line each), and reference them here.
 Latest stable only — no EAP/RC/Beta on `main`. K2 only. Single source of truth:
 `gradle/libs.versions.toml`. **Before bumping anything, web-search the latest
 stable** (training data goes stale). The Kotlin pin is bounded above by SKIE — do
-not bump Kotlin past SKIE's supported range; bump SKIE first. JVM target 21,
-JDK 21; every other version — Kotlin, AGP, SKIE, Gradle — is whatever the
-catalog says, so read it there rather than trusting a number quoted in prose.
+not bump Kotlin past SKIE's supported range; bump SKIE first. JVM bytecode
+target 21 (the catalog's `jvm-target`, set explicitly on the android + jvm
+targets — never inherited from the build JDK, see LESSONS N-005); build JDK 21
+(not 25 until detekt 2.x is stable — N-002). Every other version — Kotlin, AGP,
+SKIE, Gradle — is whatever the catalog says, so read it there rather than
+trusting a number quoted in prose.
 mise pins the non-Gradle tools (JDK, gradle, xcodegen, gh) and
 `gradle/wrapper/gradle-wrapper.properties` pins the Gradle distribution; all
 three must agree on the Kotlin/AGP/JDK/Gradle story.
