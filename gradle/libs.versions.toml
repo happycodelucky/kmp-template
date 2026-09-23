@@ -67,10 +67,10 @@ versionCatalogUpdate = "1.1.1"
 # 3.18.0 is the first release that reads Kotlin 2.4.x bytecode metadata (it
 # isolates kotlin-metadata-jvm into workers) — 3.16.0 hard-failed `explodeJar`
 # on it, which is why analysis used to be gated off. Upstream issue #1724.
-# gradle-doctor: build-health warnings (slow config, JVM mismatches, cache
-# misses).
+# (gradle-doctor was removed: its JDK checks duplicated mise + the daemon JVM
+# criteria, it had no release since 2025-08, and it used Gradle APIs that fail
+# in Gradle 10. `mise run build:profile` covers build timing — LESSONS N-009.)
 dependencyAnalysis = "3.19.2"
-gradleDoctor = "0.12.1"
 
 # --- Android SDK ------------------------------------------------------------
 # API 37 = Android 17. A floor, not a preference: AndroidX Compose 1.12 and
@@ -185,6 +185,5 @@ maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPubli
 # `DependencyUpdatesTask` import in the root build script) is unchanged.
 ben-manes-versions = { id = "io.github.ben-manes.versions", version.ref = "benManesVersions" }
 version-catalog-update = { id = "nl.littlerobots.version-catalog-update", version.ref = "versionCatalogUpdate" }
-# Build-health tooling (mise dependencies:analyze / build:doctor).
+# Build-health tooling (mise dependencies:analyze).
 dependency-analysis = { id = "com.autonomousapps.dependency-analysis", version.ref = "dependencyAnalysis" }
-gradle-doctor = { id = "com.osacky.doctor", version.ref = "gradleDoctor" }

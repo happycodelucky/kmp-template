@@ -183,8 +183,9 @@ and detekt failures.
    bugs often only surface on Native — the JVM compile is not a sufficient gate).
    `check` never builds the sample apps — `mise run build:samples` does (CI's
    fast leg runs it); it's what catches AndroidX compileSdk floors (LESSONS N-006).
-   `check` also runs the API/ABI check (§8). `mise run build:doctor` surfaces
-   build-health diagnostics if a build feels slow or misconfigured.
+   `check` also runs the API/ABI check (§8). If a build feels slow, `mise run
+   build:profile` writes a local timing report; `build/reports/problems/` lists
+   deprecations and configuration-cache problems.
 8. Learned something non-obvious? Add it to `.claude/lessons/LESSONS.md` (terse).
 
 ## 12. Hard rules
