@@ -29,9 +29,12 @@ make them (terse, one line each), and reference them here.
 Latest stable only — no EAP/RC/Beta on `main`. K2 only. Single source of truth:
 `gradle/libs.versions.toml`. **Before bumping anything, web-search the latest
 stable** (training data goes stale). The Kotlin pin is bounded above by SKIE — do
-not bump Kotlin past SKIE's supported range; bump SKIE first. JVM target 21,
-JDK 21; every other version — Kotlin, AGP, SKIE, Gradle — is whatever the
-catalog says, so read it there rather than trusting a number quoted in prose.
+not bump Kotlin past SKIE's supported range; bump SKIE first. JVM bytecode
+target 21 (the catalog's `jvm-target`, set explicitly on the android + jvm
+targets — never inherited from the build JDK, see LESSONS N-005); build JDK 21
+(not 25 until detekt 2.x is stable — N-002). Every other version — Kotlin, AGP,
+SKIE, Gradle — is whatever the catalog says, so read it there rather than
+trusting a number quoted in prose.
 mise pins the non-Gradle tools (JDK, gradle, xcodegen, gh) and
 `gradle/wrapper/gradle-wrapper.properties` pins the Gradle distribution; all
 three must agree on the Kotlin/AGP/JDK/Gradle story.
@@ -41,10 +44,12 @@ three must agree on the Kotlin/AGP/JDK/Gradle story.
 - Targets: `iosArm64`, `iosSimulatorArm64`, `macosArm64`, Android (arm64-v8a),
   and **`jvm()`** (the one target the ARM-only rule doesn't touch — serves
   desktop/server/Linux/Windows). No x86, no Intel Macs, no watchOS/tvOS.
-- `applyDefaultHierarchyTemplate { common { group("apple") { withIos(); withMacos() } } }` —
-  iOS+macOS coalesce into a shared `appleMain` intermediate. Don't hand-roll
-  source-set wiring. Code in `appleMain` must compile on **both** iOS and macOS
-  (use Foundation, not UIKit).
+- Source sets come from Kotlin's **default hierarchy template**, applied
+  implicitly (no `applyDefaultHierarchyTemplate { }` block): commonMain →
+  nativeMain → `appleMain` → `iosMain` / `macosMain`, plus `androidMain` and
+  `jvmMain`. Code in `appleMain` must compile on **both** iOS and macOS (use
+  Foundation); iOS-only code (UIKit) goes in `iosMain`. Don't hand-roll
+  source-set wiring — any manual `dependsOn()` edge disables the template.
 - Module shape lives in the `template.kmp-library` convention plugin
   (`gradle/plugins/`). Framework base name and namespace are DERIVED from the
   module name (`src` → framework `Src`, namespace `com.happycodelucky.src`).
@@ -56,7 +61,8 @@ three must agree on the Kotlin/AGP/JDK/Gradle story.
 kotlinx.* family (coroutines, atomicfu, io), **Kermit for logging** (wired into
 every module by the convention plugin — `Logger` is available in `commonMain`),
 `kotlin.time` for `Duration`/`Instant`/`Clock` (NOT `java.time` in common —
-`kotlin.time.Instant`/`Clock` are stable since 2.3.x). For HTTP, prefer
+`kotlin.time.Instant`/`Clock` are stable since 2.3.x), `kotlin.uuid.Uuid` for
+UUIDs (stable since 2.4.0 — no platform UUID types in common). For HTTP, prefer
 Ktor/Ktorfit. Testing: `kotlin.test` + Turbine + `kotlinx-coroutines-test` +
 Kotest (property tests). Library code uses **constructor injection only** — no
 Koin/service locator inside `:src`.
@@ -85,6 +91,12 @@ first. When nothing suitable exists, keep the `expect`/`actual` seam tiny (§4).
 
 - `kotlinx.coroutines` only. No `GlobalScope`.
 - `Flow`/`StateFlow`/`SharedFlow` over callbacks. No callback APIs in common.
+- Expose state with an **explicit backing field** (stable since Kotlin 2.4), not
+  a `_state`/`state` pair:
+  `val state: StateFlow<S>` + `field = MutableStateFlow(initial)` on the next
+  line; inside the class `state.value = …` smart-casts to the mutable type.
+  Swift sees only the read-only `StateFlow` (SKIE: `SkieKotlinStateFlow`); the
+  mutable field never reaches the public API or its dump (LESSONS N-007).
 - Shared mutable state across suspend boundaries → `kotlinx.coroutines.sync.Mutex`.
   Non-suspending critical sections → `kotlinx.atomicfu.locks.synchronized`. Never
   `kotlin.synchronized`, `@Synchronized`, `java.util.concurrent.locks.*`,
@@ -169,8 +181,11 @@ and detekt failures.
 7. Done when `mise run check` passes AND `:src:compileKotlinMacosArm64` /
    `compileKotlinIosSimulatorArm64` / `compileAndroidMain` build clean (common-code
    bugs often only surface on Native — the JVM compile is not a sufficient gate).
-   `check` also runs the API/ABI check (§8). `mise run build:doctor` surfaces
-   build-health diagnostics if a build feels slow or misconfigured.
+   `check` never builds the sample apps — `mise run build:samples` does (CI's
+   fast leg runs it); it's what catches AndroidX compileSdk floors (LESSONS N-006).
+   `check` also runs the API/ABI check (§8). If a build feels slow, `mise run
+   build:profile` writes a local timing report; `build/reports/problems/` lists
+   deprecations and configuration-cache problems.
 8. Learned something non-obvious? Add it to `.claude/lessons/LESSONS.md` (terse).
 
 ## 12. Hard rules

@@ -22,9 +22,12 @@
 # supports.
 
 [tools]
-java     = "temurin-21"   # JDK 21 LTS, Apple Silicon aarch64.
-gradle   = "9.6.1"        # Matches gradle/wrapper/gradle-wrapper.properties.
-python   = "3.12"         # mkdocs toolchain (docs:* tasks).
+# JDK 21 LTS, Apple Silicon aarch64. The BUILD JDK only — bytecode level is the
+# catalog's `jvm-target`. Not 25 yet: detekt 1.23.8's embedded Kotlin compiler
+# crashes on JDK 25 (detekt/detekt#8714, fixed only in the 2.x alphas).
+java     = "temurin-21"
+gradle   = "9.7.1"        # Matches gradle/wrapper/gradle-wrapper.properties.
+python   = "3.14"         # mkdocs toolchain (docs:* tasks).
 xcodegen = "latest"       # apps/ios + apps/macos project generation.
 gh       = "latest"       # release.yml uses gh.
 
@@ -68,6 +71,14 @@ run = "./gradlew :src:assembleAndroidMain"
 [tasks."build:jvm"]
 description = "Compile + jar the JVM desktop/server target."
 run = "./gradlew :src:jvmJar"
+
+[tasks."build:samples"]
+description = "Build the Gradle sample apps (Android debug APK + JVM CLI) — `check` never builds them."
+# The samples are excluded from lint/check (demo scaffolding, not shipped code),
+# but they must still COMPILE: AndroidX AARs impose compileSdk floors
+# (aar-metadata minCompileSdk) that only an app build enforces. CI's fast leg
+# runs this. See .claude/lessons/LESSONS.md N-006.
+run = "./gradlew :androidApp:assembleDebug :jvm-cli:build"
 
 [tasks."build:xcframework"]
 description = "Build the release XCFramework (all slices — iosArm64, iosSimulatorArm64, macosArm64)."
@@ -133,18 +144,17 @@ run = "./gradlew :src:updateKotlinAbi :src-testing:updateKotlinAbi"
 description = "Dependency hygiene: unused deps, api-vs-implementation misuse, undeclared transitives (dependency-analysis)."
 run = "./gradlew buildHealth"
 
-[tasks."build:doctor"]
-description = "Surface Gradle Doctor build-health diagnostics (slow config, cache misuse, JVM mismatches)."
-# A REAL build, not `--dry-run`. Gradle Doctor observes the build as it runs —
-# task execution time, cache hit/miss, download throughput, daemon and JVM
-# state — and prints its "Prescriptions" banner at the end. `--dry-run` executes
-# nothing, so Doctor has nothing to measure and the task silently reported
-# nothing while looking like it had checked.
+[tasks."build:profile"]
+description = "Profile a real build — per-task timings, configuration time, dependency resolution (local HTML report)."
+# `--profile` writes build/reports/profile/profile-<timestamp>.html. It stays
+# LOCAL — unlike `--scan`, nothing is uploaded to scans.gradle.com.
 #
-# Corollary: Doctor can only diagnose work that actually happened. On a fully
-# up-to-date tree there's little to see — run it after a `mise run clean`, or
-# right after a change that forces recompilation, when a build feels slow.
-run = "./gradlew assemble"
+# A REAL build, not `--dry-run`: a profile can only measure work that actually
+# happened. On a fully up-to-date tree there's little to see — run it after a
+# `mise run clean`, or right after a change that forces recompilation, when a
+# build feels slow. Deprecations and configuration-cache problems are listed
+# separately in build/reports/problems/problems-report.html on every build.
+run = "./gradlew assemble --profile"
 
 # --- iteration helpers (Apple) ---------------------------------------------
 
@@ -260,9 +270,9 @@ sh scripts/release.sh $ARGS
 
 [tasks."dependencies:outdated"]
 description = "List dependencies with newer STABLE versions (ben-manes gradle-versions-plugin)."
-# Stable-only (no alpha/beta/rc/snapshot) is enforced by the rejectVersionIf
-# rule on DependencyUpdatesTask in build.gradle.kts (CLAUDE.md §3) — it governs
-# both this task and dependencies:update.
+# Stable-only (no alpha/beta/rc/snapshot) is enforced by the `stableVersion`
+# predicate in build.gradle.kts (CLAUDE.md §3) — wired into this task's
+# rejectVersionIf and into dependencies:update's versionSelector alike.
 # --no-parallel: dependencyUpdates resolves every configuration across all
 # projects, which Gradle forbids under org.gradle.parallel=true (set in
 # gradle.properties). The flag overrides it for this invocation only.
@@ -270,16 +280,15 @@ run = "./gradlew dependencyUpdates --no-parallel"
 
 [tasks."dependencies:update"]
 description = "Rewrite gradle/libs.versions.toml to the latest STABLE versions, then review the diff (version-catalog-update)."
-# Stable-only is enforced by the rejectVersionIf rule in build.gradle.kts
-# (CLAUDE.md §3) — version-catalog-update consumes the same filtered
-# dependencyUpdates output, so pre-releases never reach the catalog.
+# Stable-only is enforced by the `stableVersion` predicate in build.gradle.kts
+# (CLAUDE.md §3), passed to version-catalog-update's `versionSelector` — the same
+# predicate dependencies:outdated uses, so pre-releases never reach the catalog.
 # Not truly interactive: it rewrites the catalog; review with `git diff
-# gradle/libs.versions.toml` and accept or revert. A Kotlin bump is allowed by
-# the filter (2.4.0 is "stable") but is still a MANUAL, SKIE-paired change —
-# Kotlin is bound above by SKIE; verify SKIE supports it before committing.
-# --no-parallel: versionCatalogUpdate runs dependencyUpdates internally, which
-# isn't parallel-safe (see dependencies:outdated above).
-run = "./gradlew versionCatalogUpdate --no-parallel"
+# gradle/libs.versions.toml` and accept or revert. A new Kotlin passes the
+# stable filter (2.4.20 is "stable"), but Kotlin is bound above by SKIE — a
+# MANUAL, SKIE-paired change — so the `kotlin` ref is VCU-pinned in the root
+# build script: this task never writes it (same policy as renovate.json5).
+run = "./gradlew versionCatalogUpdate"
 
 # --- aggregates ------------------------------------------------------------
 
