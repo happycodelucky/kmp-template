@@ -8,4 +8,4 @@ reference them.
 - **B-NNN** — Bugs / gotchas (the thing that bit, and the fix).
 - **N-NNN** — Notes (build-system / toolchain quirks).
 
-_Empty to start. Add entries as you learn them._
+- **N-001** — version-catalog-update ≥ 1.0 does NOT read the ben-manes report; it resolves versions itself with its own (different) stability rule. The root build passes it the shared `stableVersion` predicate, `pin`s `kotlin`, `keep`s findVersion-only keys, and disables `sortByKey`. It still strips blank lines and end-of-line comments.

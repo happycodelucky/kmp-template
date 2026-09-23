@@ -10,12 +10,12 @@
 # owns everything in the Gradle build graph. The two must agree on the Kotlin /
 # AGP / JDK story (see mise.toml header).
 #
-# NOTE: `mise run dependencies:update` (version-catalog-update) reformats this
-# file — it alphabetizes entries and drops version keys it considers "unused",
-# including ones read via the string-based findVersion("…") API in the
-# convention plugin (android-compile-sdk, the deployment targets, etc.). After
-# running it, review the diff: keep the version bumps, but restore this grouped
-# structure and any pruned keys rather than committing the flattened output.
+# NOTE: `mise run dependencies:update` (version-catalog-update) rewrites this
+# file. The root build script configures it to keep entry order, keep
+# findVersion("…")-only keys (android-compile-sdk, jvm-target, …), and never
+# touch the SKIE-bound `kotlin` ref. It still strips BLANK LINES and END-OF-LINE
+# comments — so comments here go on their own line above the entry, where they
+# survive. After running it, restore the blank lines and review the bumps.
 # =============================================================================
 
 [versions]
@@ -25,8 +25,9 @@
 # "If SKIE doesn't yet support a Kotlin version, we wait. Don't bump Kotlin
 # past SKIE's supported range." This is a paired bump — verify SKIE's changelog
 # states support for the target Kotlin before raising either pin.
-# (2.4.20 exists only as Beta as of this pin, so it's out under the no-pre-release
-# rule regardless of what SKIE supports.)
+# Kotlin 2.4.20 went stable 2026-09-07, but SKIE's `versionSupport.kotlin` still
+# ends at 2.4.0(2.4.10); 2.4.20 support is open as touchlab/SKIE#205. Pinned by
+# the VCU `pin {}` in the root build script so dependencies:update can't bump it.
 kotlin = "2.4.10"
 # com.android.kotlin.multiplatform.library variant.
 # NOTE: dependency-analysis prints "only known to work with AGP between 8.10.0
@@ -34,9 +35,12 @@ kotlin = "2.4.10"
 # the AGP release train. Advisory only: buildHealth was verified against 9.3.1
 # and produces identical advice. The warning clears when DAGP raises AGP_MAX.
 agp = "9.3.1"
-skie = "0.10.14"               # Adds Kotlin 2.4.10 support (changelog 2026-07-27).
-kmmbridge = "1.2.1"            # XCFramework → GitHub Release asset → SPM (CLAUDE.md §8).
-dokka = "2.2.0"                # Kotlin API doc generator; Dokka v2 task layout.
+# Latest release; 0.10.14 added Kotlin 2.4.10 support (changelog 2026-07-27).
+skie = "0.10.14"
+# XCFramework → GitHub Release asset → SPM (CLAUDE.md §8).
+kmmbridge = "1.2.1"
+# Kotlin API doc generator; Dokka v2 task layout.
+dokka = "2.2.0"
 # vanniktech's gradle-maven-publish-plugin — publishes signed artifacts to the
 # Sonatype Central Portal (central.sonatype.com). Pins the JDK17 / Gradle 9 /
 # AGP 9 floor and supports com.android.kotlin.multiplatform.library publications.
@@ -45,26 +49,29 @@ dokka = "2.2.0"                # Kotlin API doc generator; Dokka v2 task layout.
 mavenPublish = "0.37.0"
 
 # --- Dependency management (mise dependencies:outdated / dependencies:update) -
-# ben-manes reports available updates; version-catalog-update consumes that
-# report to rewrite THIS file in place. version-catalog-update REQUIRES the
-# ben-manes plugin to be applied (it reads its dependencyUpdates task output).
-benManesVersions = "0.57.0"
-versionCatalogUpdate = "1.1.0"
+# Two independent plugins: ben-manes REPORTS available updates
+# (dependencyUpdates); version-catalog-update REWRITES this file in place. VCU
+# has resolved versions itself since 1.0 — it does not read ben-manes output.
+# Both are fed the same stable-only predicate in the root build.gradle.kts, so
+# the report and the rewrite can never disagree on what "stable" means.
+benManesVersions = "0.64.0"
+versionCatalogUpdate = "1.1.1"
 
 # --- Build health / dependency hygiene --------------------------------------
 # dependency-analysis: flags unused deps, api-vs-implementation misuse, and
 # transitive deps you rely on directly. Run via `mise run dependencies:analyze`.
-# 3.18.0 is the first release that reads Kotlin 2.4.0 bytecode metadata (it
+# 3.18.0 is the first release that reads Kotlin 2.4.x bytecode metadata (it
 # isolates kotlin-metadata-jvm into workers) — 3.16.0 hard-failed `explodeJar`
 # on it, which is why analysis used to be gated off. Upstream issue #1724.
 # gradle-doctor: build-health warnings (slow config, JVM mismatches, cache
 # misses).
-dependencyAnalysis = "3.18.0"
+dependencyAnalysis = "3.19.2"
 gradleDoctor = "0.12.1"
 
 # --- Android SDK ------------------------------------------------------------
 android-compile-sdk = "36"
-android-min-sdk = "30"         # arm64-v8a only (CLAUDE.md §4).
+# arm64-v8a only (CLAUDE.md §4).
+android-min-sdk = "30"
 jvm-target = "21"
 
 # --- Apple deployment targets ----------------------------------------------
@@ -78,7 +85,7 @@ kotlinx-atomicfu = "0.33.0"
 # --- Logging ----------------------------------------------------------------
 # Kermit — multiplatform logging baseline, wired into every module via the
 # __PROJECT_NAME__.kmp-library convention plugin (CLAUDE.md §5).
-kermit = "2.1.0"
+kermit = "2.2.0"
 
 # --- Sample-app deps (apps/android only — iOS/macOS consume via SPM) ---------
 androidx-activity-compose = "1.13.0"
@@ -88,11 +95,13 @@ androidx-compose-bom = "2026.06.01"
 # --- Testing ----------------------------------------------------------------
 turbine = "1.2.1"
 # Kotest — assertions + property engine only; runner is kotlin.test (CLAUDE.md §10).
-kotest = "6.2.3"
+kotest = "6.2.5"
 
 # --- Lint ------------------------------------------------------------------
-ktlint = "1.8.0"               # The ktlint tool itself.
-ktlintGradle = "14.2.0"        # The org.jlleitschuh.gradle.ktlint Gradle plugin.
+# The ktlint tool itself.
+ktlint = "1.8.0"
+# The org.jlleitschuh.gradle.ktlint Gradle plugin.
+ktlintGradle = "14.2.0"
 # detekt 1.23.8 is the latest stable; the 2.x line is alpha-only and CLAUDE.md
 # §3 bans pre-stable on main.
 detekt = "1.23.8"

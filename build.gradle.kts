@@ -8,6 +8,7 @@
  */
 
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
+import nl.littlerobots.vcu.plugin.versionSelector
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform) apply false
@@ -223,10 +224,13 @@ tasks.register<Copy>("copyDokkaToDocs") {
 // `-Drevision=release` only chooses which Maven metadata channel ben-manes
 // reads — it does NOT reject versions whose string is a pre-release, so without
 // this rule `dependencyUpdates` happily suggests 1.5.0-alpha22 over 1.4.0. The
-// rejectVersionIf rule below filters every candidate whose version carries a
-// pre-release qualifier. It governs BOTH mise tasks: `dependencies:outdated`
-// (the report) and `dependencies:update` (version-catalog-update consumes the
-// same dependencyUpdates output).
+// `stableVersion` predicate below filters every candidate whose version carries
+// a pre-release qualifier, and it is handed to BOTH plugins:
+// `rejectVersionIf` on ben-manes (`dependencies:outdated`, the report) and
+// `versionSelector` on version-catalog-update (`dependencies:update`, the
+// rewrite). VCU has resolved versions itself since 1.0 — it no longer reads the
+// ben-manes report — and its built-in default selector uses a DIFFERENT
+// stability rule, so it must be given this one explicitly to stay in lockstep.
 //
 // A version is considered STABLE only if it is digits-and-dots and nothing else.
 // Accepts: 1.2.3, 2026.06.01, 1.2.3.4. Rejects everything carrying a qualifier —
@@ -248,5 +252,28 @@ tasks.withType<DependencyUpdatesTask>().configureEach {
         // The current version is never rejected here — ben-manes only feeds
         // candidate upgrades through this predicate.
         !stableVersion.matches(candidate.version)
+    }
+}
+
+versionCatalogUpdate {
+    versionSelector { stableVersion.matches(it.candidate.version) }
+    // Keep the catalog's hand-grouped sections (Toolchain, kotlinx, Testing, …)
+    // instead of alphabetizing them.
+    sortByKey.set(false)
+    keep {
+        // Keys no library/plugin references: android-compile-sdk, android-min-sdk
+        // and jvm-target (read via the string-based findVersion("…") API in the
+        // convention plugin, invisible to VCU's usage scan), and the Apple
+        // deployment targets (documentation for the floors spelled out in
+        // src/build.gradle.kts and Package.swift). Without this, VCU prunes them.
+        keepUnusedVersions.set(true)
+    }
+    pin {
+        // Kotlin is bounded above by SKIE (CLAUDE.md §3): a Kotlin bump is a
+        // manual, SKIE-paired change — the same policy renovate.json5 encodes.
+        // Pinning the `kotlin` ref also holds the compose-compiler plugin, which
+        // versions in lockstep with it. To bump Kotlin, edit the catalog by hand
+        // once SKIE's changelog lists support; this task only reports it.
+        versions.add("kotlin")
     }
 }
