@@ -93,7 +93,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           # Full history so `gh release create --generate-notes` can walk
           # commits between the previous tag and this release.
@@ -269,11 +269,12 @@ jobs:
           install: true
           cache: true
 
-      # Pinned at v5 rather than v6: v6 moved caching to a commercially-
-      # licensed component. v5 keeps the freely-licensed caching and runs
-      # on Node 24. See .github/workflows/ci.yml for the full rationale.
+      # `cache-provider: basic` = the MIT-licensed caching provider, never the
+      # proprietary default. See .github/workflows/ci.yml for the full rationale.
       - name: Set up Gradle cache
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
 
       # Vanniktech `mavenPublishing { }` exposes two umbrella tasks (see
       # src/build.gradle.kts). The "stops at staging" behaviour of

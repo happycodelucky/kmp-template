@@ -29,7 +29,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # mise pins the JDK, Gradle bootstrap binary, gh, and python (see
       # /mise.toml). One install gives CI and local dev the same toolchain.
@@ -39,13 +39,19 @@ jobs:
           install: true
           cache: true
 
-      # Pinned at v5: v6 moved caching to a commercially-licensed component. v5
-      # keeps the freely-licensed caching and runs on Node 24. cache-read-only on
-      # fork PRs (which run without secrets and can't safely populate the shared
-      # cache) prevents cache poisoning.
+      # v6 defaults to "Enhanced Caching", a proprietary component under the
+      # Gradle Technologies Terms of Use. `cache-provider: basic` opts out: the
+      # MIT-licensed provider (plain actions/cache of ~/.gradle/caches +
+      # wrapper) — the proprietary library is then never loaded. (This replaces
+      # the old v5 pin, which kept free caching but stopped receiving patches in
+      # Feb 2026.) Tradeoff: basic has no restore keys, so a build-file or
+      # catalog change starts from a cold cache. See the gradle/actions
+      # DISTRIBUTION.md. cache-read-only on fork PRs (which run without secrets
+      # and can't safely populate the shared cache) prevents cache poisoning.
       - name: Set up Gradle cache
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v6
         with:
+          cache-provider: basic
           cache-read-only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
 
       # Lint + detekt + JVM/Android tests. No Apple targets here — those need a
@@ -87,7 +93,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up mise toolchain
         uses: jdx/mise-action@v4
@@ -96,8 +102,9 @@ jobs:
           cache: true
 
       - name: Set up Gradle cache
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v6
         with:
+          cache-provider: basic
           cache-read-only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
 
       # Read major.minor from the in-tree fallback literal in build.gradle.kts
