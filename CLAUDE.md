@@ -44,10 +44,12 @@ three must agree on the Kotlin/AGP/JDK/Gradle story.
 - Targets: `iosArm64`, `iosSimulatorArm64`, `macosArm64`, Android (arm64-v8a),
   and **`jvm()`** (the one target the ARM-only rule doesn't touch — serves
   desktop/server/Linux/Windows). No x86, no Intel Macs, no watchOS/tvOS.
-- `applyDefaultHierarchyTemplate { common { group("apple") { withIos(); withMacos() } } }` —
-  iOS+macOS coalesce into a shared `appleMain` intermediate. Don't hand-roll
-  source-set wiring. Code in `appleMain` must compile on **both** iOS and macOS
-  (use Foundation, not UIKit).
+- Source sets come from Kotlin's **default hierarchy template**, applied
+  implicitly (no `applyDefaultHierarchyTemplate { }` block): commonMain →
+  nativeMain → `appleMain` → `iosMain` / `macosMain`, plus `androidMain` and
+  `jvmMain`. Code in `appleMain` must compile on **both** iOS and macOS (use
+  Foundation); iOS-only code (UIKit) goes in `iosMain`. Don't hand-roll
+  source-set wiring — any manual `dependsOn()` edge disables the template.
 - Module shape lives in the `template.kmp-library` convention plugin
   (`gradle/plugins/`). Framework base name and namespace are DERIVED from the
   module name (`src` → framework `Src`, namespace `com.happycodelucky.src`).
@@ -59,7 +61,8 @@ three must agree on the Kotlin/AGP/JDK/Gradle story.
 kotlinx.* family (coroutines, atomicfu, io), **Kermit for logging** (wired into
 every module by the convention plugin — `Logger` is available in `commonMain`),
 `kotlin.time` for `Duration`/`Instant`/`Clock` (NOT `java.time` in common —
-`kotlin.time.Instant`/`Clock` are stable since 2.3.x). For HTTP, prefer
+`kotlin.time.Instant`/`Clock` are stable since 2.3.x), `kotlin.uuid.Uuid` for
+UUIDs (stable since 2.4.0 — no platform UUID types in common). For HTTP, prefer
 Ktor/Ktorfit. Testing: `kotlin.test` + Turbine + `kotlinx-coroutines-test` +
 Kotest (property tests). Library code uses **constructor injection only** — no
 Koin/service locator inside `:src`.
@@ -88,6 +91,12 @@ first. When nothing suitable exists, keep the `expect`/`actual` seam tiny (§4).
 
 - `kotlinx.coroutines` only. No `GlobalScope`.
 - `Flow`/`StateFlow`/`SharedFlow` over callbacks. No callback APIs in common.
+- Expose state with an **explicit backing field** (stable since Kotlin 2.4), not
+  a `_state`/`state` pair:
+  `val state: StateFlow<S>` + `field = MutableStateFlow(initial)` on the next
+  line; inside the class `state.value = …` smart-casts to the mutable type.
+  Swift sees only the read-only `StateFlow` (SKIE: `SkieKotlinStateFlow`); the
+  mutable field never reaches the public API or its dump (LESSONS N-007).
 - Shared mutable state across suspend boundaries → `kotlinx.coroutines.sync.Mutex`.
   Non-suspending critical sections → `kotlinx.atomicfu.locks.synchronized`. Never
   `kotlin.synchronized`, `@Synchronized`, `java.util.concurrent.locks.*`,
