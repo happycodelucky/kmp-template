@@ -363,7 +363,9 @@ def annotate_history(changesets: list[Changeset], repo: Optional[str]) -> None:
         log = git("log", "--diff-filter=A", "--format=%H%x09%ct%x09%s", "--", c.name, check=False).strip()
         if not log:
             continue  # not committed yet (a local preview)
-        sha, timestamp, subject = log.splitlines()[-1].split("\t", 2)
+        # Newest add first: a file name comes back when a branch name is reused,
+        # and the older adds belong to changesets that were already released.
+        sha, timestamp, subject = log.splitlines()[0].split("\t", 2)
         c.added_at = int(timestamp)
         # A squash merge's subject ends with "(#123)" — no API call needed.
         match = re.search(r"\(#(\d+)\)\s*$", subject)
