@@ -192,9 +192,10 @@ and detekt failures.
    and pass it with `--body-file` (LESSONS N-011):
    - **PR:** start from `.github/PULL_REQUEST_TEMPLATE.md`. Follow each
      `<!-- AI: … -->` comment, replace every `Unfilled` callout (none may
-     remain), and tick only what you actually ran or checked. Tick "AI-authored,
-     awaiting human review", name the tool + model, and open with `--draft`; the
-     human switches the tick and marks it ready after reviewing.
+     remain), prune each choice list to the lines that apply, and tick a
+     done-gate box only for what you actually ran or checked. Keep "AI-authored"
+     under AI assistance, name the tool + model, and open with `--draft` — a
+     human marking it ready is the review sign-off (LESSONS N-012).
    - **Issue:** read the matching form in `.github/ISSUE_TEMPLATE/`. Write each
      field's `label` as a `### ` heading in form order, with `_No response_`
      under a skipped optional field — the exact shape the web form produces.
