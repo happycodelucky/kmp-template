@@ -96,11 +96,11 @@ skie {
 gitHubReleaseArtifacts(releasString = "v${project.version}")
 
 // The XCFramework's Swift module name. DERIVED from the module name the same way
-// the convention plugin derives each framework binary's baseName (src → "Src";
-// after `init`, myapp → "Myapp"), so the two can never drift and no token is
+// the convention plugin derives each framework binary's baseName (src → "SrcKit";
+// after `init`, my-app → "MyAppKit"), so the two can never drift and no token is
 // needed. If they disagreed, the generated Package.swift would reference a binary
 // that doesn't exist.
-val xcframeworkBaseName = project.name.split("-").joinToString("") { it.replaceFirstChar(Char::uppercase) }
+val xcframeworkBaseName = project.name.split("-").joinToString("") { it.replaceFirstChar(Char::uppercase) } + "Kit"
 
 kmmbridge {
     frameworkName.set(xcframeworkBaseName)
