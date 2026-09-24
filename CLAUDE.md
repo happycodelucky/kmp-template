@@ -52,7 +52,9 @@ three must agree on the Kotlin/AGP/JDK/Gradle story.
   source-set wiring — any manual `dependsOn()` edge disables the template.
 - Module shape lives in the `template.kmp-library` convention plugin
   (`gradle/plugins/`). Framework base name and namespace are DERIVED from the
-  module name (`src` → framework `Src`, namespace `com.happycodelucky.src`).
+  module name (`src` → framework `SrcKit`, namespace `com.happycodelucky.src`).
+  The framework / Swift module is always `<Name>Kit`, so it never shares a name
+  with a public type (SKIE would rename the type in Swift — LESSONS D-002).
   Adding a module = apply `template.kmp-library` + `template.publish`.
 - Keep the `expect`/`actual` seam tiny; push logic into `commonMain`.
 
@@ -123,7 +125,7 @@ Two channels, non-overlapping:
   installs the next `X.Y.Z-SNAPSHOT` to `~/.m2` (never the released version,
   which would shadow Central's).
 - **GitHub Releases** (KMMBridge in `src/build.gradle.kts`): the SKIE-enhanced
-  `Src.xcframework` for SPM consumers. Don't redeclare `XCFramework("Src")` —
+  `__FRAMEWORK__.xcframework` for SPM consumers. Don't redeclare `XCFramework("__FRAMEWORK__")` —
   KMMBridge auto-creates it. The released `Package.swift` lives only on each
   `vX.Y.Z` tag; `main` keeps the local-dev form.
 

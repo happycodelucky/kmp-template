@@ -10,8 +10,8 @@
  * the project name, so adding a module means applying this plugin and nothing
  * else:
  *
- *   src          → framework "Src",        namespace com.happycodelucky.src
- *   src-testing  → framework "SrcTesting",  namespace com.happycodelucky.src.testing
+ *   src          → framework "SrcKit",        namespace com.happycodelucky.src
+ *   src-testing  → framework "SrcTestingKit", namespace com.happycodelucky.src.testing
  *
  * `mise run init <name>` renames the module directories (src → <name>,
  * src-testing → <name>-testing); the derivations below then produce the right
@@ -39,8 +39,11 @@ plugins {
 // the named-lookup API reads the same catalog the main build uses.
 val libs = the<VersionCatalogsExtension>().named("libs")
 
-// src → "Src"; src-testing → "SrcTesting".
-val frameworkBaseName = name.split("-").joinToString("") { part -> part.replaceFirstChar(Char::uppercase) }
+// src → "SrcKit"; src-testing → "SrcTestingKit". The "Kit" suffix keeps the Swift
+// module name distinct from the library's public types: a module and a type with
+// the same name make SKIE rename the type in Swift (`Wake` → `Wake_`) and let the
+// bare type shadow the module qualifier in SKIE's generated code (LESSONS D-002).
+val frameworkBaseName = name.split("-").joinToString("") { part -> part.replaceFirstChar(Char::uppercase) } + "Kit"
 
 // src → com.happycodelucky.src; src-testing → ….src.testing.
 // Doubles as the framework bundle id, pinned so SKIE doesn't fall back to the
@@ -68,7 +71,7 @@ kotlin {
 
     // --- Apple targets (CLAUDE.md §4) ---------------------------------------
     // Static framework binaries with a stable bundle id. In `:src`, KMMBridge
-    // aggregates these into `Src.xcframework` at config time (no explicit
+    // aggregates these into `SrcKit.xcframework` at config time (no explicit
     // XCFramework declaration — see src/build.gradle.kts).
     listOf(iosArm64(), iosSimulatorArm64(), macosArm64()).forEach { target ->
         target.binaries.framework {

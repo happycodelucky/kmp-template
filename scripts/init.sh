@@ -82,11 +82,14 @@ fi
 
 # The framework/XCFramework module name is ALWAYS derived from <name> and must be
 # an identifier (no spaces) — it matches the convention plugin's frameworkBaseName
-# derivation (my-app -> MyApp). The display name is free text (may contain spaces)
-# and defaults to the same value when not given.
-FRAMEWORK=$(printf '%s' "$NAME" | awk -F- '{ s=""; for (i=1;i<=NF;i++){ s = s toupper(substr($i,1,1)) substr($i,2) } print s }')
+# derivation (my-app -> MyAppKit). The `Kit` suffix keeps the Swift module name
+# distinct from the library's public types: a `MyApp` type inside a `MyApp` module
+# makes SKIE rename the type in Swift (`MyApp_`) — LESSONS D-002. The display name
+# is free text (may contain spaces) and defaults to the plain name (MyApp).
+PASCAL=$(printf '%s' "$NAME" | awk -F- '{ s=""; for (i=1;i<=NF;i++){ s = s toupper(substr($i,1,1)) substr($i,2) } print s }')
+FRAMEWORK="${PASCAL}Kit"
 if [ -z "$DISPLAY" ]; then
-    DISPLAY="$FRAMEWORK"
+    DISPLAY="$PASCAL"
 fi
 
 # Collision guard.
@@ -196,7 +199,7 @@ replace_in_file() {
         -e "s/:src-testing/:$NAME-testing/g" \
         -e "s/:src/:$NAME/g" \
         -e "s/build@@SRCTASK@@/build:src/g" \
-        -e "s/assembleSrcXCFramework/assemble${FRAMEWORK}XCFramework/g" \
+        -e "s/assembleSrcKitXCFramework/assemble${FRAMEWORK}XCFramework/g" \
         -e "s#src-testing/build#$NAME-testing/build#g" \
         -e "s#src-testing/api#$NAME-testing/api#g" \
         -e "s#src/build#$NAME/build#g" \
