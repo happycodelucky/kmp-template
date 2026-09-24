@@ -12,10 +12,16 @@ Every PR adds a Markdown file under .changeset/ describing its change:
 
     Full Markdown: what changed, why, and what a consumer has to do.
 
-`change` is the semver level (major | minor | patch). While the library is
-0.x a `major` change bumps the MINOR version: 0.x has no stable API to break.
-An optional `version: X.Y.Z` pins the next release outright — the only way
-out of 0.x (1.0.0 is a decision, not an accident).
+`change` is the semver level (major | minor | patch), and it is the source of
+truth for the version: the author's call, never second-guessed by tooling.
+While the library is 0.x a `major` change bumps the MINOR version: 0.x has no
+stable API to break. An optional `version: X.Y.Z` pins the next release
+outright — the only way out of 0.x (1.0.0 is a decision, not an accident) —
+and may even sit below what the levels add up to; it only has to move forward.
+
+The body starts as an "Unfilled" callout (the PR template's convention);
+`check` and `version` refuse a changeset that still holds it, so no release
+note ships empty by accident.
 
 When changesets are pending on main, the Release PR workflow runs `version`:
 it bumps `version=` in gradle.properties plus every line marked
@@ -85,6 +91,10 @@ VERSION_LINE = re.compile(r"^(version[ \t]*[=:][ \t]*)(\S*)[ \t]*$", re.MULTILIN
 STABLE_VERSION = re.compile(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")
 
 RELEASE_BRANCH = "release/next"
+
+# The body placeholder `new` writes — a GitHub callout whose text starts with
+# "Unfilled", the same convention as .github/PULL_REQUEST_TEMPLATE.md.
+UNFILLED = re.compile(r"^\s*>\s*_?Unfilled\b")
 
 
 class ChangesetError(Exception):
@@ -165,6 +175,8 @@ class Changeset:
     description: str
     version: Optional[Version]
     body: str
+    # Line of a leftover "Unfilled" callout: the release note was never written.
+    unfilled_line: Optional[int] = None
     # Filled in from git history for the changelog; absent for uncommitted files.
     added_at: Optional[int] = None
     pr: Optional[int] = None
@@ -270,6 +282,7 @@ def parse_changeset(path: Path) -> Changeset:
     if problems:
         raise ChangesetError(problems)
 
+    unfilled_line = next((end + 2 + i for i, line in enumerate(lines[end + 1 :]) if UNFILLED.match(line)), None)
     body = "\n".join(lines[end + 1 :])
     # Template guidance lives in HTML comments; it's not part of the note.
     body = re.sub(r"<!--.*?-->", "", body, flags=re.DOTALL).strip("\n")
@@ -281,7 +294,21 @@ def parse_changeset(path: Path) -> Changeset:
         description=values["description"].strip(),
         version=version,
         body=body,
+        unfilled_line=unfilled_line,
     )
+
+
+def require_filled(changesets: list[Changeset]) -> None:
+    """A release note must be written before it can ship: `check` (the PR
+    gate) and `version` (the release PR) refuse a leftover Unfilled callout."""
+    problems = [
+        (c.path, c.unfilled_line, "replace the Unfilled callout with the release note (what changed, why, what "
+         "consumers do) — or delete it if the description says it all")
+        for c in changesets
+        if c.unfilled_line
+    ]
+    if problems:
+        raise ChangesetError(problems)
 
 
 def load_changesets() -> list[Changeset]:
@@ -323,12 +350,14 @@ def plan_release(changesets: list[Changeset], current: Version) -> Plan:
         plan.pinned = top.version
         if top.version.key() <= current.key():
             fail(f"`version: {top.version}` must be higher than the current {current}", top.path)
-        if top.version.key() < plan.computed.key():
-            fail(
-                f"`version: {top.version}` is lower than the {plan.computed} a `{plan.level}` change requires",
-                top.path,
-            )
         plan.notes.append(f"pinned by `version: {top.version}` in {top.name}")
+        if top.version.key() < plan.computed.key():
+            # An override, and the author's call — honoured, but made visible.
+            plan.notes.append(f"below the {plan.computed} a `{plan.level}` change gives")
+            warn(
+                f"{top.name}: `version: {top.version}` is below the {plan.computed} a `{plan.level}` "
+                f"change gives; releasing {top.version} as pinned"
+            )
         plan.next = top.version
     else:
         plan.next = plan.computed
@@ -574,9 +603,14 @@ def cmd_new(args: argparse.Namespace) -> int:
         fail(f"{rel(path)} already exists — edit it, or pass --name for a second changeset on this branch")
 
     body = args.body or (
-        "<!-- The full release note, in Markdown: what changed, why, and what a\n"
-        "     consumer has to do (migration steps, before/after examples). It is\n"
-        "     published in the changelog and the GitHub release. Delete this comment. -->\n"
+        "<!-- AI: The full release note, in Markdown: what changed, why, and what a\n"
+        "     consumer has to do — migration steps, before/after snippets. Headings\n"
+        "     are fine. It's published in the changelog and the GitHub release.\n"
+        "     Replace the callout below with it (or delete the callout if the\n"
+        "     description says it all); this comment is dropped. -->\n"
+        "\n"
+        "> [!IMPORTANT]\n"
+        "> _Unfilled — the release note for this change._\n"
     )
     CHANGESET_DIR.mkdir(exist_ok=True)
     path.write_text(
@@ -588,7 +622,7 @@ def cmd_new(args: argparse.Namespace) -> int:
         f"{body.rstrip()}\n",
         encoding="utf-8",
     )
-    parse_changeset(path)  # never write something `check` would reject
+    parse_changeset(path)  # never write something `check` would reject (bar the placeholder)
     print(rel(path))
     return 0
 
@@ -614,6 +648,7 @@ def yaml_scalar(text: str) -> str:
 
 def cmd_check(args: argparse.Namespace) -> int:
     changesets = load_changesets()
+    require_filled(changesets)
     current = read_version()
     plan = plan_release(changesets, current)
     with_section(CHANGELOG.read_text(encoding="utf-8"), "")  # the insertion marker exists
@@ -671,7 +706,8 @@ def cmd_status(args: argparse.Namespace) -> int:
         return 0
     print(f"Pending changesets: {len(changesets)}")
     for c in sorted(changesets, key=lambda c: (-LEVELS.index(c.change), c.name)):
-        print(f"  [{c.change}] {c.title}  ({c.name})")
+        unfilled = "  — release note Unfilled" if c.unfilled_line else ""
+        print(f"  [{c.change}] {c.title}  ({c.name}){unfilled}")
     detail = f"highest change: {plan.level}" + ("; " + "; ".join(plan.notes) if plan.notes else "")
     print(f"Next version:    {plan.next}  ({detail})")
     print("\nChangelog preview\n-----------------\n")
@@ -684,6 +720,7 @@ def cmd_version(args: argparse.Namespace) -> int:
     changesets = load_changesets()
     if not changesets:
         fail("no pending changesets — nothing to version")
+    require_filled(changesets)
     plan = plan_release(changesets, read_version())
     repo = github_repo()
     annotate_history(changesets, repo)

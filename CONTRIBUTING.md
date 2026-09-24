@@ -23,7 +23,9 @@ Xcode is not managed by mise — install a recent Xcode that SKIE supports.
 4. Adding a dependency? Web-search the latest stable and add it to
    `gradle/libs.versions.toml` only. `mise run dependencies:outdated` helps.
 5. Does the change reach consumers? Add a changeset — `mise run changeset` —
-   and fill in its body (see [`.changeset/README.md`](.changeset/README.md)).
+   and replace its *Unfilled* callout with the release note (see
+   [`.changeset/README.md`](.changeset/README.md)). Its `change` level decides
+   the version; the PR's *Type of change* just restates it.
 
 ## The done gate
 

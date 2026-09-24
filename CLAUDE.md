@@ -130,13 +130,16 @@ Two channels, non-overlapping:
 **Releases are changeset-driven** (`.changeset/README.md`,
 `.github/PUBLISHING.md`; LESSONS D-001, N-013, N-014). Every PR that reaches consumers adds a changeset
 (`mise run changeset`: `title`, `change: major|minor|patch`, `description`, then
-the full note); the Changeset PR check enforces it (label `no-changeset` to opt
-out). Merges to `main` keep one rolling **Release vX.Y.Z** PR up to date — it
+the full note in place of its Unfilled callout); the Changeset PR check enforces
+it (label `no-changeset` to opt out). A changeset's `change` is the source of
+truth for the version — the author's call, which neither the PR nor tooling
+overrides. Merges to `main` keep one rolling **Release vX.Y.Z** PR up to date — it
 bumps `version=` in `gradle.properties` (the single source of the version),
 rewrites every `x-release-version`-marked copy, and writes the changelog.
 Merging it runs `.github/workflows/release.yml`, which publishes exactly that
 version and then deploys the docs site. While 0.x a `major` change bumps the
-minor; `version: X.Y.Z` in a changeset pins the version (the way to 1.0.0).
+minor; `version: X.Y.Z` in a changeset pins the version (the way to 1.0.0; it
+may even sit below what the levels imply, as long as it moves forward).
 Never edit `version=` by hand. Pre-releases and retries: dispatch `release.yml`
 with a `version` (e.g. `0.4.0-rc.1`), or `mise run publish:maven` by hand.
 
@@ -188,8 +191,12 @@ and detekt failures.
 6. Changed the public API on purpose? `mise run api:dump` and commit the `api/`
    diff (§8) — otherwise `check` fails on the surface change.
 7. Add a changeset (`mise run changeset`, §8) when the change reaches
-   consumers — pick `change` honestly: removing or renaming public API is
-   `major`, even while 0.x. Docs/CI/test-only PRs get the `no-changeset` label.
+   consumers, and replace its Unfilled callout with the release note. Its
+   `change` level is the version decision; the PR's "Type of change" only
+   restates it. The usual reading — removed/renamed public API is `major` (even
+   while 0.x), new API `minor`, a fix `patch` — is a default, not a rule: a
+   different level is the author's call (say why in the body). Docs/CI/test-only
+   PRs get the `no-changeset` label.
 8. Done when `mise run check` passes AND `:src:compileKotlinMacosArm64` /
    `compileKotlinIosSimulatorArm64` / `compileAndroidMain` build clean (common-code
    bugs often only surface on Native — the JVM compile is not a sufficient gate).

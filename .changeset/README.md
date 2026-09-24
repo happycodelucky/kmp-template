@@ -12,7 +12,10 @@ mise run changeset:status   # what's pending, the next version, a changelog prev
 ```
 
 `mise run changeset` names the file after your branch
-(`.changeset/<branch>.md`). Commit it with the change, then fill in the body.
+(`.changeset/<branch>.md`) and starts the body as an *Unfilled* callout (the PR
+template's convention). Replace it with the release note — the Changeset check
+fails until you do — or delete it if the description says it all. Commit the
+file with the change.
 
 ## Format
 
@@ -31,13 +34,14 @@ are nested under the entry in the changelog.
 | Key | Required | Meaning |
 |---|---|---|
 | `title` | yes | One line: what changed. The entry's heading in the changelog. |
-| `change` | yes | `major` (breaking) · `minor` (new, compatible) · `patch` (fix). |
+| `change` | yes | `major` (breaking) · `minor` (new, compatible) · `patch` (fix). The source of truth for the version — your call; see below. |
 | `description` | yes | A sentence or two for consumers. Shown under the title and in the release PR's table. |
 | `version` | no | Pin the next release to exactly this version — see below. |
 
 Values are one line each. Quote a value that contains `: ` or ` #`, or starts
 with a symbol (`"Fix issue #7"`). `mise run changeset:check` flags anything
-YAML would misread. HTML comments in the body are dropped.
+YAML would misread. HTML comments in the body are dropped; a leftover
+*Unfilled* callout fails the check.
 
 ## From changesets to a release
 
@@ -57,6 +61,13 @@ YAML would misread. HTML comments in the body are dropped.
 
 ### Picking the version
 
+A changeset's `change` is the version decision, and it's the author's: nothing
+checks it against the code or the PR (whose *Type of change* just restates
+it). The labels above are the usual reading, not a rule — there are reasons to
+ship a change at another level (say, removing an API nobody could have called
+as a `minor`). When you do, say why in the body, so the release PR's reviewer
+sees it.
+
 The release takes the highest `change` among the pending changesets, bumped
 from the current `version=` in `gradle.properties`:
 
@@ -67,9 +78,10 @@ from the current `version=` in `gradle.properties`:
 
 While the library is 0.x, a breaking change bumps the **minor** version: 0.x
 makes no stability promise, so `major` never moves it to 1.0.0 by accident.
-Leaving 0.x is a decision. Add `version: 1.0.0` to a changeset's front matter
-(any explicit version works, as long as it's above the current one and at
-least what the changes require).
+Leaving 0.x is a decision. Add `version: 1.0.0` to a changeset's front matter.
+A pin overrides the levels outright — any version above the current one works,
+even one below what the levels add up to (the release PR notes the gap). With
+several pins, the highest wins.
 
 ## Versions in docs and code
 

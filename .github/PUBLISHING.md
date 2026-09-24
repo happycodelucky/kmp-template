@@ -34,8 +34,9 @@ flowchart LR
 
 1. **Every PR adds a changeset** — `mise run changeset` writes
    `.changeset/<branch>.md` with a `title`, a `change` level
-   (`major`/`minor`/`patch`) and a `description`, followed by the full note in
-   Markdown. The **Changeset** check (`changeset.yml`) fails a PR without one;
+   (`major`/`minor`/`patch` — the source of truth for the version, and the
+   author's call) and a `description`, followed by the full note in Markdown in
+   place of an *Unfilled* callout the check refuses to let through. The **Changeset** check (`changeset.yml`) fails a PR without one;
    label it `no-changeset` if nothing in it reaches consumers. Format and rules:
    [`.changeset/README.md`](../.changeset/README.md).
 2. **One rolling release PR.** On every push to `main` with changesets
