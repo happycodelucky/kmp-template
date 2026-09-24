@@ -195,7 +195,7 @@ The sample apps under `/apps/ios` and `/apps/macos` consume the root `Package.sw
 mise run spm:dev        # rebuild debug XCFramework + flip Package.swift to local path
 mise run spm:restore    # restore the committed Package.swift
 mise run build:xcframework  # rebuild release XCFramework without touching Package.swift
-mise run publish:local  # publish the artifacts to the local Maven repository for consumption
+mise run publish:local  # publish to ~/.m2 as the next X.Y.Z-SNAPSHOT (never the released version)
 ```
 
 The committed `Package.swift` always points at the local build path; released versions resolve their remote-binary `Package.swift` from their `vX.Y.Z` tag.

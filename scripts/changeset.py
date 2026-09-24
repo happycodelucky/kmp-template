@@ -34,6 +34,7 @@ stderr):
     version   apply the pending changesets (the Release PR workflow's job)
     notes     print one version's release notes, for the GitHub release
     current   print the version in gradle.properties (optionally at a git ref)
+    snapshot  print the version under development as X.Y.Z-SNAPSHOT (publish:local)
 
 Standard library only, Python 3.9+ — it runs on bare GitHub runners.
 """
@@ -743,6 +744,15 @@ def cmd_current(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_snapshot(args: argparse.Namespace) -> int:
+    # The version under development: what the pending changesets add up to,
+    # else the next patch. Never the released version itself — a local build
+    # of it in ~/.m2 would shadow the real artifact from Maven Central.
+    plan = plan_release(load_changesets(), read_version())
+    print(f"{plan.next or plan.current.bump('patch')}-SNAPSHOT")
+    return 0
+
+
 # --- entry point -------------------------------------------------------------------
 
 
@@ -800,6 +810,9 @@ def main(argv: Optional[list[str]] = None) -> int:
     current = sub.add_parser("current", help="print the version in gradle.properties")
     current.add_argument("--ref", help="read it at this git ref instead of the working tree")
     current.set_defaults(run=cmd_current)
+
+    snapshot = sub.add_parser("snapshot", help="print the version under development as X.Y.Z-SNAPSHOT")
+    snapshot.set_defaults(run=cmd_snapshot)
 
     args = parser.parse_args(argv)
     try:

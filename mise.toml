@@ -254,8 +254,13 @@ run = "python3 scripts/changeset.py check"
 # --- publish ---------------------------------------------------------------
 
 [tasks."publish:local"]
-description = "Publish both modules to the local Maven repo (~/.m2)."
-run = "./gradlew publishToMavenLocal"
+description = "Publish both modules to the local Maven repo (~/.m2) as the next -SNAPSHOT (e.g. 0.5.0-SNAPSHOT)."
+# Never the plain gradle.properties version: that is the LAST RELEASE, and a
+# local build of it in ~/.m2 would shadow the real artifact from Maven Central
+# for every local project that lists mavenLocal() first. The version under
+# development instead — what the pending changesets add up to, else the next
+# patch — as a -SNAPSHOT, which a consumer opts into explicitly.
+run = './gradlew publishToMavenLocal -Pversion="$(python3 scripts/changeset.py snapshot)"'
 
 [tasks."publish:maven"]
 description = "Release by hand: gradle.properties' version, or --version X.Y.Z-rc.1 for a pre-release; --dryrun stages only. See scripts/release.sh."

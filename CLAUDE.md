@@ -120,7 +120,8 @@ and types (`iOS`, `macOS`) except JetBrains spellings (`iosArm64`, `withMacos()`
 Two channels, non-overlapping:
 - **Maven Central** (`template.publish` / vanniktech): Android AAR + jvm jar +
   KMP metadata + klibs. For Gradle/KMP consumers. `mise run publish:local`
-  installs to `~/.m2`.
+  installs the next `X.Y.Z-SNAPSHOT` to `~/.m2` (never the released version,
+  which would shadow Central's).
 - **GitHub Releases** (KMMBridge in `src/build.gradle.kts`): the SKIE-enhanced
   `Src.xcframework` for SPM consumers. Don't redeclare `XCFramework("Src")` —
   KMMBridge auto-creates it. The released `Package.swift` lives only on each
