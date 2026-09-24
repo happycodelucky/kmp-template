@@ -25,7 +25,7 @@ mise run open:ios       # or: mise run open:macos
 # After editing Kotlin, re-run to pick up the changes:
 mise run spm:dev
 
-# Before committing, restore the committed (released) Package.swift:
+# Before committing, restore the committed Package.swift:
 mise run spm:restore
 ```
 

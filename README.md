@@ -35,20 +35,28 @@ Replace the placeholder `Greeter` with your real API.
 
 ### Gradle (KMP / Android / JVM)
 
+<!-- x-release-version-start -->
 ```kotlin
 // gradle/libs.versions.toml
 [libraries]
-__PROJECT_NAME__ = { module = "com.happycodelucky.__PROJECT_NAME__:__PROJECT_NAME__", version = "<latest>" }
+__PROJECT_NAME__ = { module = "com.happycodelucky.__PROJECT_NAME__:__PROJECT_NAME__", version = "0.0.0" }
 
 // build.gradle.kts (commonMain)
 implementation(libs.__PROJECT_NAME__)
 ```
+<!-- x-release-version-end -->
 
 ### Swift (SPM)
 
-Add `https://github.com/happycodelucky/__PROJECT_NAME__.git` as a package
-dependency, pinned to a release tag. The XCFramework ships as a GitHub Release
-asset (see [`.github/PUBLISHING.md`](.github/PUBLISHING.md)).
+Add this repository as a package dependency, pinned to a release tag. The
+XCFramework ships as a GitHub Release asset (see
+[`.github/PUBLISHING.md`](.github/PUBLISHING.md)).
+
+<!-- x-release-version-start -->
+```swift
+.package(url: "https://github.com/happycodelucky/__PROJECT_NAME__.git", from: "0.0.0")
+```
+<!-- x-release-version-end -->
 
 ## Development
 
@@ -70,13 +78,18 @@ to get started.
 
 ### One-time CI setup
 
-- **GitHub Pages (docs site):** the Docs workflow deploys `docs/` to Pages. It
+- **GitHub Pages (docs site):** the Docs workflow deploys `docs/` to Pages
+  after each successful release (pushes to `main` only build it). It
   auto-enables Pages on first run (`configure-pages` with `enablement: true`),
   which needs **Settings → Actions → General → Workflow permissions → Read and
   write**. If your org blocks auto-enablement, enable it manually:
   **Settings → Pages → Source: GitHub Actions**.
 - **Releases:** set the four Maven Central credentials on the
-  `continuous-deployment` environment — see [`.github/PUBLISHING.md`](.github/PUBLISHING.md).
+  `continuous-deployment` environment, and let the release PR be opened:
+  **Settings → Actions → General → Allow GitHub Actions to create and approve
+  pull requests** (or configure a GitHub App) — see
+  [`.github/PUBLISHING.md`](.github/PUBLISHING.md). Every PR then carries a
+  changeset (`mise run changeset`; [`.changeset/README.md`](.changeset/README.md)).
 
 ## License
 

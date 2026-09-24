@@ -3,12 +3,13 @@ import PackageDescription
 
 // __FRAMEWORK__ is the XCFramework's Swift module name. At rest it is "Src"
 // (derived from the :src module); `mise run init` rewrites it to the display
-// name. This local form points at the debug XCFramework Gradle builds; the first
-// real release (mise run publish:maven, or the GitHub release workflow) flips it
-// to a remote `.binaryTarget(url:checksum:)` against the GitHub Release asset.
+// name. This committed form points at the debug XCFramework Gradle builds, and
+// stays that way on main. Each release tags a commit whose Package.swift is the
+// remote `.binaryTarget(url:checksum:)` for that version's GitHub Release asset
+// — SPM consumers pin a tag and get that form (.github/PUBLISHING.md).
 //
 //   mise run spm:dev      — rebuild the debug XCFramework + point this file at it
-//   mise run spm:restore  — restore the committed (released) form
+//   mise run spm:restore  — restore the committed form
 let packageName = "__FRAMEWORK__"
 
 let package = Package(

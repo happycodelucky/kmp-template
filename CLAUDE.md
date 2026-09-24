@@ -120,16 +120,28 @@ and types (`iOS`, `macOS`) except JetBrains spellings (`iosArm64`, `withMacos()`
 Two channels, non-overlapping:
 - **Maven Central** (`template.publish` / vanniktech): Android AAR + jvm jar +
   KMP metadata + klibs. For Gradle/KMP consumers. `mise run publish:local`
-  installs to `~/.m2`. `mise run publish:maven` releases to Central — bump with
-  `--major`/`--minor`/`--patch` (most significant wins) or `--version X`;
-  `--dryrun` stages only. A real run updates Package.swift, publishes, tags, and
-  creates the GitHub release (after a typed confirmation). See `.github/PUBLISHING.md`.
+  installs the next `X.Y.Z-SNAPSHOT` to `~/.m2` (never the released version,
+  which would shadow Central's).
 - **GitHub Releases** (KMMBridge in `src/build.gradle.kts`): the SKIE-enhanced
   `Src.xcframework` for SPM consumers. Don't redeclare `XCFramework("Src")` —
-  KMMBridge auto-creates it. CI-only publishing.
+  KMMBridge auto-creates it. The released `Package.swift` lives only on each
+  `vX.Y.Z` tag; `main` keeps the local-dev form.
 
-Real tagged releases go through `.github/workflows/release.yml` (computes the
-version, dry-run by default). See `.github/PUBLISHING.md`.
+**Releases are changeset-driven** (`.changeset/README.md`,
+`.github/PUBLISHING.md`; LESSONS D-001, N-013, N-014). Every PR that reaches consumers adds a changeset
+(`mise run changeset`: `title`, `change: major|minor|patch`, `description`, then
+the full note in place of its Unfilled callout); the Changeset PR check enforces
+it (label `no-changeset` to opt out). A changeset's `change` is the source of
+truth for the version — the author's call, which neither the PR nor tooling
+overrides. Merges to `main` keep one rolling **Release vX.Y.Z** PR up to date — it
+bumps `version=` in `gradle.properties` (the single source of the version),
+rewrites every `x-release-version`-marked copy, and writes the changelog.
+Merging it runs `.github/workflows/release.yml`, which publishes exactly that
+version and then deploys the docs site. While 0.x a `major` change bumps the
+minor; `version: X.Y.Z` in a changeset pins the version (the way to 1.0.0; it
+may even sit below what the levels imply, as long as it moves forward).
+Never edit `version=` by hand. Pre-releases and retries: dispatch `release.yml`
+with a `version` (e.g. `0.4.0-rc.1`), or `mise run publish:maven` by hand.
 
 **Public-API stability.** The committed dumps under `<module>/api/` are the
 reference for the public surface, across every target. `mise run check` (and CI)
@@ -178,7 +190,14 @@ and detekt failures.
 5. Public API crossing to Swift? Apply §7 at design time.
 6. Changed the public API on purpose? `mise run api:dump` and commit the `api/`
    diff (§8) — otherwise `check` fails on the surface change.
-7. Done when `mise run check` passes AND `:src:compileKotlinMacosArm64` /
+7. Add a changeset (`mise run changeset`, §8) when the change reaches
+   consumers, and replace its Unfilled callout with the release note. Its
+   `change` level is the version decision; the PR's "Type of change" only
+   restates it. The usual reading — removed/renamed public API is `major` (even
+   while 0.x), new API `minor`, a fix `patch` — is a default, not a rule: a
+   different level is the author's call (say why in the body). Docs/CI/test-only
+   PRs get the `no-changeset` label.
+8. Done when `mise run check` passes AND `:src:compileKotlinMacosArm64` /
    `compileKotlinIosSimulatorArm64` / `compileAndroidMain` build clean (common-code
    bugs often only surface on Native — the JVM compile is not a sufficient gate).
    `check` never builds the sample apps — `mise run build:samples` does (CI's
@@ -186,22 +205,22 @@ and detekt failures.
    `check` also runs the API/ABI check (§8). If a build feels slow, `mise run
    build:profile` writes a local timing report; `build/reports/problems/` lists
    deprecations and configuration-cache problems.
-8. Learned something non-obvious? Add it to `.claude/lessons/LESSONS.md` (terse).
-9. Opening a PR or filing an issue? GitHub applies the templates only in its web
-   UI — `gh … create --body` skips them — so build the body from them yourself
-   and pass it with `--body-file` (LESSONS N-011):
-   - **PR:** start from `.github/PULL_REQUEST_TEMPLATE.md`. Follow each
-     `<!-- AI: … -->` comment, replace every `Unfilled` callout (none may
-     remain), prune each choice list to the lines that apply, and tick a
-     done-gate box only for what you actually ran or checked. Keep "AI-authored"
-     under AI assistance, name the tool + model, and open with `--draft` — a
-     human marking it ready is the review sign-off (LESSONS N-012).
-   - **Issue:** read the matching form in `.github/ISSUE_TEMPLATE/`. Write each
-     field's `label` as a `### ` heading in form order, with `_No response_`
-     under a skipped optional field — the exact shape the web form produces.
-     Use its `title:` prefix and `labels:` (drop any the repo lacks — `gh`
-     rejects them). Tick a required checkbox only if it's true (e.g. search
-     with `gh issue list --search` first).
+9. Learned something non-obvious? Add it to `.claude/lessons/LESSONS.md` (terse).
+10. Opening a PR or filing an issue? GitHub applies the templates only in its web
+    UI — `gh … create --body` skips them — so build the body from them yourself
+    and pass it with `--body-file` (LESSONS N-011):
+    - **PR:** start from `.github/PULL_REQUEST_TEMPLATE.md`. Follow each
+      `<!-- AI: … -->` comment, replace every `Unfilled` callout (none may
+      remain), prune each choice list to the lines that apply, and tick a
+      done-gate box only for what you actually ran or checked. Keep "AI-authored"
+      under AI assistance, name the tool + model, and open with `--draft` — a
+      human marking it ready is the review sign-off (LESSONS N-012).
+    - **Issue:** read the matching form in `.github/ISSUE_TEMPLATE/`. Write each
+      field's `label` as a `### ` heading in form order, with `_No response_`
+      under a skipped optional field — the exact shape the web form produces.
+      Use its `title:` prefix and `labels:` (drop any the repo lacks — `gh`
+      rejects them). Tick a required checkbox only if it's true (e.g. search
+      with `gh issue list --search` first).
 
 ## 12. Hard rules
 
