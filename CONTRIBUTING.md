@@ -41,6 +41,9 @@ mise run format
 ## Commits & PRs
 
 - Keep commits focused; explain *why* in the body when it isn't obvious.
+- Fill in the PR template. Sections holding an *Unfilled* callout (Summary, Open
+  questions, How it was verified) are required. Agent-authored PRs open as
+  drafts and say so under *AI assistance* (CLAUDE.md §11).
 - CI runs the same `mise run check` + `mise run build:xcframework`. Green CI is
   required to merge.
 - Learned something non-obvious? Add a terse line to

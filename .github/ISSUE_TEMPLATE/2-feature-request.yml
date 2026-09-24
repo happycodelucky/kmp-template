@@ -1,3 +1,5 @@
+# Agents filing through `gh issue create`: the web form is bypassed, so build
+# the body from this file — see CLAUDE.md §11.
 name: Feature request
 description: Propose new functionality or an API change for __DISPLAY_NAME__.
 title: "[Feature]: "
@@ -61,6 +63,35 @@ body:
         - [ ] <Docs updated (docs/ + KDoc) if public API changed>
     validations:
       required: true
+
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: |
+        What this should explicitly NOT do. The counterpart to the acceptance
+        criteria: it keeps an implementation, especially an agent's, from
+        over-building. The library is headless, so UI and app-level concerns
+        are out of scope by default (CLAUDE.md §1).
+      placeholder: |
+        - No change to existing public signatures
+        - No platform-specific convenience API (commonMain only)
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context & pointers
+      description: |
+        Where an implementer (human or agent) should start: modules / source
+        sets (`commonMain`, `appleMain`, …), existing types or files to extend,
+        related issues or PRs, prior art in other libraries.
+      placeholder: |
+        - Extends: `SomeClient` in `:src` commonMain
+        - Related: #12
+    validations:
+      required: false
 
   - type: textarea
     id: alternatives
