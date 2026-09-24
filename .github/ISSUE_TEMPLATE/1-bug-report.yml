@@ -1,3 +1,5 @@
+# Agents filing through `gh issue create`: the web form is bypassed, so build
+# the body from this file — see CLAUDE.md §11.
 name: Bug report
 description: Report incorrect behavior in __DISPLAY_NAME__.
 title: "[Bug]: "
@@ -47,8 +49,8 @@ body:
     id: toolchain
     attributes:
       label: Toolchain
-      description: Kotlin / Gradle / Xcode / JDK versions, as relevant. See gradle/libs.versions.toml for the pins you built against.
-      placeholder: "e.g. Kotlin 2.4.10, Gradle 9.7.1, Xcode 26.4, JDK 21"
+      description: Kotlin (Gradle plugin) / Gradle / Xcode / JDK versions, as relevant. Building this repo? The pins are in gradle/libs.versions.toml.
+      placeholder: "Kotlin … · Gradle … · Xcode … · JDK …"
     validations:
       required: false
 
@@ -88,8 +90,16 @@ body:
   - type: textarea
     id: context
     attributes:
-      label: Additional context
-      description: Anything else — when it started, a suspected cause, related issues.
+      label: Context & pointers
+      description: |
+        Where a fix should start — for a maintainer or a coding agent. The
+        suspected module / source set (e.g. `:src` `appleMain`), files or
+        symbols involved, when it started, a suspected cause, related issues
+        or PRs.
+      placeholder: |
+        - Suspected area: `:src` appleMain, `SomeClient.connect()`
+        - Started after: 0.3.0
+        - Related: #12
     validations:
       required: false
 
