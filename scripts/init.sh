@@ -208,7 +208,7 @@ replace_in_file() {
 }
 
 # Walk regular files only, skipping binary/build/scratch dirs and symlinks.
-# scripts/ is NOT pruned: scripts/version.sh and scripts/release.sh survive the
+# scripts/ is NOT pruned: scripts/release.sh and scripts/changeset.py survive the
 # render and carry tokens (__FRAMEWORK__, __PROJECT_NAME__) that must be replaced.
 # We skip only this running script (editing a script mid-execution is unsafe) and
 # template-manifest.txt (deleted below).
@@ -246,8 +246,8 @@ while IFS= read -r entry; do
     rm -rf "$entry"
 done < scripts/template-manifest.txt
 
-# Remove scripts/ only if empty. After render it still contains version.sh and
-# release.sh (the rendered project's release tooling), so this is normally a
+# Remove scripts/ only if empty. After render it still contains release.sh and
+# changeset.py (the rendered project's release tooling), so this is normally a
 # no-op — init.sh + template-manifest.txt are gone, the release scripts stay.
 rmdir scripts 2>/dev/null || true
 

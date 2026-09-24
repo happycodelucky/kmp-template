@@ -22,6 +22,8 @@ Xcode is not managed by mise — install a recent Xcode that SKIE supports.
 3. Public API that crosses to Swift? Apply CLAUDE.md §7 (SKIE) at design time.
 4. Adding a dependency? Web-search the latest stable and add it to
    `gradle/libs.versions.toml` only. `mise run dependencies:outdated` helps.
+5. Does the change reach consumers? Add a changeset — `mise run changeset` —
+   and fill in its body (see [`.changeset/README.md`](.changeset/README.md)).
 
 ## The done gate
 
@@ -43,11 +45,16 @@ mise run format
 - Keep commits focused; explain *why* in the body when it isn't obvious.
 - CI runs the same `mise run check` + `mise run build:xcframework`. Green CI is
   required to merge.
+- The **Changeset** check fails a PR that adds no `.changeset/*.md`. If nothing
+  in the PR reaches consumers (docs, CI, tests, samples), label it
+  `no-changeset` instead.
 - Learned something non-obvious? Add a terse line to
   `.claude/lessons/LESSONS.md`.
 
 ## Releases
 
-Releases are CI-driven via `.github/workflows/release.yml` (computes the version,
-dry-run by default). See [`.github/PUBLISHING.md`](.github/PUBLISHING.md). Don't
-hand-edit `Package.swift` — it's generated.
+Releases come from the changesets. Merges to `main` keep a **Release vX.Y.Z**
+PR open with the computed version and changelog; merging it publishes the
+release. Pre-releases and retries are manual runs of the Release workflow. See
+[`.github/PUBLISHING.md`](.github/PUBLISHING.md). Don't hand-edit `version=` in
+`gradle.properties` or `Package.swift` — both are generated.

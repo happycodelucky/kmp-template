@@ -17,6 +17,15 @@ Closes #
 - [ ] Breaking change (public API / behavior)
 - [ ] Docs / tooling only
 
+## Changeset
+
+<!-- The Release PR builds the version and changelog from these. `mise run
+     changeset` writes .changeset/<branch>.md — fill in its body.
+     See .changeset/README.md. -->
+
+- [ ] Added a changeset, with an honest `change` level (removing/renaming public API is `major`)
+- [ ] No changeset: nothing here reaches consumers (docs, CI, tests, samples) — labelled `no-changeset`
+
 ## Affected platforms
 
 <!-- Check what this touches. Native bugs often hide on the JVM, so verify there. -->

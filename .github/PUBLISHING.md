@@ -20,27 +20,106 @@ The test-fakes module publishes alongside it under `com.happycodelucky.__PROJECT
 
 ## Release pipeline
 
-Releases are triggered via `workflow_dispatch` on `release.yml`. No one types a version number — the workflow computes it.
+Releases are driven by **changesets**: each PR describes its change in a small
+Markdown file, and the version and changelog are computed from them. Nobody
+picks a version number by hand or runs a release workflow for a normal release.
 
-1. Choose `bumpType` (patch / minor / major). The version is derived from the latest GitHub Release; the chosen component increments and everything below it resets to zero. An optional `versionSuffix` adds a SemVer pre-release identifier.
-2. **`dryRun=true` (default)** — runs `publishToMavenCentral`: uploads to Central Portal staging only. The deployment sits in "validated" state; review it at https://central.sonatype.com/ and click Publish (or Drop). Nothing is tagged and no XCFramework is published. Safe to run frequently. The local equivalent is `mise run publish:maven --dryrun`.
-3. **`dryRun=false`** — runs `publishAndReleaseToMavenCentral` (irreversible), then the SPM steps: `:src:kmmBridgePublish` builds and uploads `__FRAMEWORK__.xcframework.zip` to the `vX.Y.Z` GitHub Release and regenerates `Package.swift`; the workflow rewrites the asset URL to the public form, commits `Package.swift` to `main`, and force-moves the tag onto that commit.
+```mermaid
+flowchart LR
+    PR["PR + .changeset/*.md"] -->|merge| main
+    main -->|Release PR workflow| RPR["Release vX.Y.Z PR<br/>(release/next)"]
+    RPR -->|merge| main2["main: version=X.Y.Z"]
+    main2 -->|Release workflow| out["Maven Central<br/>GitHub Release + SPM tag<br/>docs site"]
+```
 
-The `automaticRelease = false` flag in `src/build.gradle.kts` is what makes dry-run behaviour correct. Do not flip it without reading the comment there.
+1. **Every PR adds a changeset** — `mise run changeset` writes
+   `.changeset/<branch>.md` with a `title`, a `change` level
+   (`major`/`minor`/`patch`) and a `description`, followed by the full note in
+   Markdown. The **Changeset** check (`changeset.yml`) fails a PR without one;
+   label it `no-changeset` if nothing in it reaches consumers. Format and rules:
+   [`.changeset/README.md`](../.changeset/README.md).
+2. **One rolling release PR.** On every push to `main` with changesets
+   pending, `release-pr.yml` rebuilds the `release/next` branch from `main` and
+   opens or updates a **Release vX.Y.Z** PR. `scripts/changeset.py version`
+   picks the version (the highest `change` level, bumped from `version=` in
+   `gradle.properties`; while 0.x a `major` bumps the minor), rewrites
+   `gradle.properties` and every version marked `x-release-version` (e.g. the
+   README's install snippets), inserts the release into `docs/changelog.md`, and
+   deletes the consumed changesets. Later merges fold into the same PR.
+3. **Merging the release PR publishes it.** Its version bump lands on `main`;
+   `release.yml` sees `version=` change on a push to `main` and releases exactly
+   that version — Maven Central first (irreversible), then the XCFramework to a
+   GitHub Release plus the `vX.Y.Z` tag — and, only once all of that succeeded,
+   deploys the docs site. `main` then *is* the release: its version, README and
+   changelog already match what was published.
+
+To leave 0.x (or pin any exact version), add `version: 1.0.0` to a
+changeset's front matter.
+
+### Pre-releases and retries (manual runs)
+
+Run **Release** from the Actions tab (`workflow_dispatch`):
+
+| `version` | Does |
+|---|---|
+| *(empty)* | Releases `gradle.properties`' version from `main` — retries a release that failed. |
+| `0.4.0-rc.1` | A pre-release, from **any branch**. Marked pre-release on GitHub; notes are the changesets pending on that branch; the docs site is left alone. |
+| `0.4.0` | Must equal `gradle.properties`' version on `main` — stable versions come only from release PRs, so the changelog, `main` and Maven Central can't disagree. |
+
+`dryRun` defaults to **true** for manual runs: it uploads to the Central Portal
+staging area only (`publishToMavenCentral`). Review the deployment at
+https://central.sonatype.com/ and click Publish (or Drop). Nothing is tagged
+and no XCFramework is published. Merging a release PR is always a real
+release.
+
+**If a release fails part-way**, re-run the failed jobs from the Actions UI (a
+re-run replays the same commit). The release job resumes: a version already on
+Maven Central skips straight to the GitHub/SPM half; a version that already has
+a GitHub Release is refused.
+
+The `automaticRelease = false` flag in the publish convention plugin
+(`gradle/plugins/…publish.gradle.kts`) is what makes dry-run behaviour correct.
+Do not flip it without reading the comment there.
+
+### One-time setup for the release PR
+
+A push or PR made with the workflow's `GITHUB_TOKEN` triggers no other
+workflows, so CI wouldn't run on the release PR by itself. Pick one:
+
+- **Default (`GITHUB_TOKEN`)** — enable **Settings → Actions → General →
+  Allow GitHub Actions to create and approve pull requests**. `release-pr.yml`
+  then dispatches CI and the Changeset check on `release/next` itself; their
+  results show on the PR.
+- **GitHub App** — create an App with *Contents* and *Pull requests*
+  read/write, install it on the repo, and set the `RELEASE_APP_CLIENT_ID`
+  variable and `RELEASE_APP_PRIVATE_KEY` secret. The release PR is then
+  authored by the App and CI triggers normally. (Prefer an App to a personal
+  token: a PR opened as you can't be approved by you.)
+
+If `main` requires status checks, add **Changeset** alongside CI's jobs.
 
 ## Releasing by hand (`mise run publish:maven`)
 
-The CI workflow above is the canonical path. For a solo or local release, `mise run publish:maven` (→ `scripts/release.sh`) runs the same steps from your machine. The version is computed from the latest git tag (`scripts/version.sh`):
+The CI flow above is the canonical path. `mise run publish:maven`
+(→ `scripts/release.sh`) runs the same steps from your machine, under the same
+version rules — `gradle.properties`' version by default, `--version` only for a
+pre-release:
 
 ```bash
-mise run publish:maven --minor --dryrun   # compute next version, stage to Central only
-mise run publish:maven --patch            # full release of the next patch (prompts to confirm)
-mise run publish:maven --version 1.4.0     # release an exact version
+mise run publish:maven --dryrun                    # stage gradle.properties' version to Central only
+mise run publish:maven                             # finish a release CI couldn't (prompts to confirm)
+mise run publish:maven --version 0.4.0-rc.1        # a pre-release, from any branch
 ```
 
-- **Bump flags** — `--major` / `--minor` / `--patch` bump that component from the latest `vX.Y.Z` tag (lower components reset to zero). If more than one is passed, the **most significant wins**. `--version X.Y.Z` overrides the computed value. Default is `--patch`.
-- **`--dryrun`** — computes the version and runs `publishToMavenCentral` (Central staging only). Nothing is committed, tagged, or released. Safe to run repeatedly.
-- **Real release** — after a typed confirmation (it echoes the plan first; Maven Central is irreversible), it: rewrites `Package.swift` to the released remote-binary form (URL + checksum), runs `publishAndReleaseToMavenCentral`, commits, creates and pushes the `vX.Y.Z` tag, and runs `gh release create` with the XCFramework zip asset.
+- **`--dryrun`** — runs `publishToMavenCentral` (Central staging only). Nothing
+  is committed, tagged, or released. Safe to run repeatedly.
+- **Real release** — after a typed confirmation (it echoes the plan first;
+  Maven Central is irreversible), it: builds the XCFramework and writes
+  `Package.swift` in its released remote-binary form (URL + checksum), runs
+  `publishAndReleaseToMavenCentral`, tags `vX.Y.Z` on a release commit carrying
+  that `Package.swift` (never pushed to a branch), and runs `gh release create`
+  with the XCFramework zip and the changelog's notes. It doesn't deploy the
+  docs site — `gh workflow run docs.yml -f deploy=true` does.
 
 Requires a clean tree, an authenticated `gh`, and the Maven Central credentials configured (next section).
 
@@ -91,17 +170,22 @@ Touchlab's KMMBridge publishes the Apple framework to pure-Swift SPM consumers. 
 
 1. Gradle builds an `XCFramework` with `iosArm64` + `iosSimulatorArm64` + `macosArm64` slices. No x86. SKIE-enhanced (`produceDistributableFramework()` emits `.swiftinterface` files required by Xcode 26).
 2. KMMBridge zips the XCFramework and uploads it as a GitHub Release asset. GitHub *Releases*, not GitHub *Packages* — Packages requires a PAT to download even from public repos; Release assets are public and unauthenticated.
-3. KMMBridge regenerates the root `Package.swift` referencing the asset by URL + sha256 checksum. The workflow rewrites KMMBridge's API asset URL to the public `releases/download/…` form, commits `Package.swift` to `main`, and force-moves the version tag onto that commit so the tagged manifest matches the uploaded binary.
+3. KMMBridge regenerates the root `Package.swift` referencing the asset by URL + sha256 checksum. The workflow rewrites KMMBridge's API asset URL to the public `releases/download/…` form, commits `Package.swift` on a detached **release commit**, and force-moves the version tag onto it so the tagged manifest matches the uploaded binary.
 4. Swift consumers add this repo's URL as an SPM dependency pinned to a version tag; the tagged `Package.swift` hands them the prebuilt binary.
+
+The release commit lives **only on its tag**. `main` is branch-protected (a bot
+push is rejected) and doesn't need it: `main` keeps the local-dev
+`Package.swift` the sample apps build against, and a consumer pinned to
+`branch: "main"` isn't a supported way to consume a binary target.
 
 ### Rules
 
 - KMMBridge config lives in the `kmmbridge { }` block in `src/build.gradle.kts`; the version pin lives in `gradle/libs.versions.toml`. Only `:src` gets KMMBridge — `:src-testing` ships klibs via Maven Central only.
 - Do **not** redeclare `XCFramework("__FRAMEWORK__")` in the `kotlin { }` block: KMMBridge auto-creates the aggregator tasks (`assemble__FRAMEWORK__{Debug,Release}XCFramework`) at config time; a second declaration collides.
-- Versioning: the release workflow computes the version and passes `-Pversion=X.Y.Z`; KMMBridge tags `v${version}`. KMMBridge's own timestamp versioning is not used.
+- Versioning: the release workflow passes `-Pversion=X.Y.Z` — `gradle.properties`' version, or a pre-release's — and KMMBridge tags `v${version}`. KMMBridge's own timestamp versioning is not used.
 - Publishing is CI-only: the `kmmBridgePublish` task only exists when `-PENABLE_PUBLISHING=true` is passed (the release workflow does this).
 - Don't vendor `XCFramework` zips into the repo. Everything flows through GitHub Release assets + the committed `Package.swift`.
-- `Package.swift` is generated — `kmmBridgePublish` writes the released form, `spmDevBuild` the local-dev form. Don't hand-edit it, and never commit the local-dev form.
+- `Package.swift` on `main` is the committed local-dev form; `kmmBridgePublish` writes the released form onto each tag's release commit, and `spmDevBuild` rewrites it for local development. Don't commit either rewrite (`mise run spm:restore`).
 
 ## Local XCFramework development
 
@@ -109,9 +193,9 @@ The sample apps under `/apps/ios` and `/apps/macos` consume the root `Package.sw
 
 ```bash
 mise run spm:dev        # rebuild debug XCFramework + flip Package.swift to local path
-mise run spm:restore    # restore the committed (remote-binary) Package.swift
+mise run spm:restore    # restore the committed Package.swift
 mise run build:xcframework  # rebuild release XCFramework without touching Package.swift
 mise run publish:local  # publish the artifacts to the local Maven repository for consumption
 ```
 
-Until the first `dryRun=false` release runs, the committed `Package.swift` still points at the local build path — the first real release flips it to the remote-binary form.
+The committed `Package.swift` always points at the local build path; released versions resolve their remote-binary `Package.swift` from their `vX.Y.Z` tag.
