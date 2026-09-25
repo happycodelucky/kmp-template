@@ -1,10 +1,14 @@
 ---
 title: Changelog
+# Changeset bodies are arbitrary Markdown; don't let mkdocs-macros read a
+# `{{ … }}` in one as template syntax.
+render_macros: false
 ---
 
 # Changelog
 
-## Unreleased
+Every release of __DISPLAY_NAME__, newest first. Each entry is assembled from
+the changesets merged since the previous release, when its release PR is
+opened.
 
-TODO: list notable changes here. Move entries under a versioned heading when you
-cut a release.
+<!-- changesets: the Release PR workflow inserts each new release below this line. Keep it. -->

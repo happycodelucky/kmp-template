@@ -10,8 +10,8 @@
  * the project name, so adding a module means applying this plugin and nothing
  * else:
  *
- *   src          → framework "Src",        namespace com.happycodelucky.src
- *   src-testing  → framework "SrcTesting",  namespace com.happycodelucky.src.testing
+ *   src          → framework "SrcKit",        namespace com.happycodelucky.src
+ *   src-testing  → framework "SrcTestingKit", namespace com.happycodelucky.src.testing
  *
  * `mise run init <name>` renames the module directories (src → <name>,
  * src-testing → <name>-testing); the derivations below then produce the right
@@ -24,11 +24,9 @@
  */
 
 import org.gradle.api.artifacts.VersionCatalogsExtension
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
-import org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTarget
 
 plugins {
     id("org.jetbrains.kotlin.multiplatform")
@@ -41,8 +39,11 @@ plugins {
 // the named-lookup API reads the same catalog the main build uses.
 val libs = the<VersionCatalogsExtension>().named("libs")
 
-// src → "Src"; src-testing → "SrcTesting".
-val frameworkBaseName = name.split("-").joinToString("") { part -> part.replaceFirstChar(Char::uppercase) }
+// src → "SrcKit"; src-testing → "SrcTestingKit". The "Kit" suffix keeps the Swift
+// module name distinct from the library's public types: a module and a type with
+// the same name make SKIE rename the type in Swift (`Wake` → `Wake_`) and let the
+// bare type shadow the module qualifier in SKIE's generated code (LESSONS D-002).
+val frameworkBaseName = name.split("-").joinToString("") { part -> part.replaceFirstChar(Char::uppercase) } + "Kit"
 
 // src → com.happycodelucky.src; src-testing → ….src.testing.
 // Doubles as the framework bundle id, pinned so SKIE doesn't fall back to the
@@ -50,23 +51,27 @@ val frameworkBaseName = name.split("-").joinToString("") { part -> part.replaceF
 // rewrites it when `--group` differs.
 val moduleNamespace = "com.happycodelucky." + name.replace("-", ".")
 
+// Bytecode level for BOTH JVM-flavored targets (android + jvm) — a consumer
+// contract, deliberately independent of the JDK that runs the build.
+val jvmBytecodeTarget =
+    JvmTarget.fromTarget(
+        libs
+            .findVersion("jvm-target")
+            .get()
+            .requiredVersion,
+    )
+
 kotlin {
-    // CLAUDE.md §4: applyDefaultHierarchyTemplate. Don't hand-roll source set
-    // wiring. iosMain + macosMain coalesce into a shared "appleMain"
-    // intermediate. Adding jvm() gives a jvmMain/jvmTest sibling automatically.
-    @OptIn(ExperimentalKotlinGradlePluginApi::class)
-    applyDefaultHierarchyTemplate {
-        common {
-            group("apple") {
-                withIos()
-                withMacos()
-            }
-        }
-    }
+    // CLAUDE.md §4: source-set wiring is Kotlin's DEFAULT hierarchy template,
+    // applied implicitly — no `applyDefaultHierarchyTemplate { }` block. For these
+    // targets it yields commonMain → nativeMain → appleMain → {iosMain, macosMain},
+    // plus jvmMain / androidMain siblings. appleMain holds code shared by iOS and
+    // macOS (Foundation); iosMain / macosMain hold the platform-only remainder
+    // (e.g. UIKit). Declaring any manual dependsOn() edge disables the template.
 
     // --- Apple targets (CLAUDE.md §4) ---------------------------------------
     // Static framework binaries with a stable bundle id. In `:src`, KMMBridge
-    // aggregates these into `Src.xcframework` at config time (no explicit
+    // aggregates these into `SrcKit.xcframework` at config time (no explicit
     // XCFramework declaration — see src/build.gradle.kts).
     listOf(iosArm64(), iosSimulatorArm64(), macosArm64()).forEach { target ->
         target.binaries.framework {
@@ -80,7 +85,6 @@ kotlin {
     // The new com.android.kotlin.multiplatform.library plugin's android {} block.
     // arm64-v8a only: consumers' app modules pin the ABI splits; we test
     // arm64-v8a only (documented in README).
-    @OptIn(ExperimentalKotlinGradlePluginApi::class)
     android {
         namespace = moduleNamespace
         compileSdk =
@@ -97,34 +101,34 @@ kotlin {
                 .toInt()
 
         withHostTestBuilder { /* enables the androidHostTest source set */ }
+
+        // Explicit, never inherited. Left unset, AGP wires this target's
+        // jvmTarget to the JDK running the build — so building on a newer JDK
+        // would silently ship newer bytecode in the AAR. (This target is not a
+        // KotlinJvmTarget, so a `targets.withType<KotlinJvmTarget>()` block
+        // never reaches it.)
+        compilerOptions {
+            jvmTarget.set(jvmBytecodeTarget)
+        }
     }
 
     // --- JVM target (desktop / server / Linux / Windows) --------------------
     // Architecture-neutral bytecode — the one target the ARM-only rule doesn't
     // touch. No SKIE, no KMMBridge — the JVM ships through Maven Central only,
     // like Android.
-    jvm()
+    jvm {
+        compilerOptions {
+            jvmTarget.set(jvmBytecodeTarget)
+        }
+    }
 
     // --- Compiler options (CLAUDE.md §3) ------------------------------------
-    @OptIn(ExperimentalKotlinGradlePluginApi::class)
     compilerOptions {
         // K2 stable APIs only. Keep in lockstep with the `kotlin` pin in
         // gradle/libs.versions.toml.
         languageVersion.set(KotlinVersion.KOTLIN_2_4)
         apiVersion.set(KotlinVersion.KOTLIN_2_4)
         allWarningsAsErrors.set(true)
-    }
-
-    // Per-target JVM toolchain knobs — both the Android target's JVM
-    // compilation and the desktop jvm() target need bytecode level 21.
-    targets.withType<KotlinJvmTarget>().configureEach {
-        compilations.configureEach {
-            compileTaskProvider.configure {
-                compilerOptions {
-                    jvmTarget.set(JvmTarget.JVM_21)
-                }
-            }
-        }
     }
 
     // --- Logging baseline (CLAUDE.md §5) ------------------------------------

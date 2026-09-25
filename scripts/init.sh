@@ -82,11 +82,14 @@ fi
 
 # The framework/XCFramework module name is ALWAYS derived from <name> and must be
 # an identifier (no spaces) — it matches the convention plugin's frameworkBaseName
-# derivation (my-app -> MyApp). The display name is free text (may contain spaces)
-# and defaults to the same value when not given.
-FRAMEWORK=$(printf '%s' "$NAME" | awk -F- '{ s=""; for (i=1;i<=NF;i++){ s = s toupper(substr($i,1,1)) substr($i,2) } print s }')
+# derivation (my-app -> MyAppKit). The `Kit` suffix keeps the Swift module name
+# distinct from the library's public types: a `MyApp` type inside a `MyApp` module
+# makes SKIE rename the type in Swift (`MyApp_`) — LESSONS D-002. The display name
+# is free text (may contain spaces) and defaults to the plain name (MyApp).
+PASCAL=$(printf '%s' "$NAME" | awk -F- '{ s=""; for (i=1;i<=NF;i++){ s = s toupper(substr($i,1,1)) substr($i,2) } print s }')
+FRAMEWORK="${PASCAL}Kit"
 if [ -z "$DISPLAY" ]; then
-    DISPLAY="$FRAMEWORK"
+    DISPLAY="$PASCAL"
 fi
 
 # Collision guard.
@@ -196,7 +199,7 @@ replace_in_file() {
         -e "s/:src-testing/:$NAME-testing/g" \
         -e "s/:src/:$NAME/g" \
         -e "s/build@@SRCTASK@@/build:src/g" \
-        -e "s/assembleSrcXCFramework/assemble${FRAMEWORK}XCFramework/g" \
+        -e "s/assembleSrcKitXCFramework/assemble${FRAMEWORK}XCFramework/g" \
         -e "s#src-testing/build#$NAME-testing/build#g" \
         -e "s#src-testing/api#$NAME-testing/api#g" \
         -e "s#src/build#$NAME/build#g" \
@@ -208,7 +211,7 @@ replace_in_file() {
 }
 
 # Walk regular files only, skipping binary/build/scratch dirs and symlinks.
-# scripts/ is NOT pruned: scripts/version.sh and scripts/release.sh survive the
+# scripts/ is NOT pruned: scripts/release.sh and scripts/changeset.py survive the
 # render and carry tokens (__FRAMEWORK__, __PROJECT_NAME__) that must be replaced.
 # We skip only this running script (editing a script mid-execution is unsafe) and
 # template-manifest.txt (deleted below).
@@ -246,8 +249,8 @@ while IFS= read -r entry; do
     rm -rf "$entry"
 done < scripts/template-manifest.txt
 
-# Remove scripts/ only if empty. After render it still contains version.sh and
-# release.sh (the rendered project's release tooling), so this is normally a
+# Remove scripts/ only if empty. After render it still contains release.sh and
+# changeset.py (the rendered project's release tooling), so this is normally a
 # no-op — init.sh + template-manifest.txt are gone, the release scripts stay.
 rmdir scripts 2>/dev/null || true
 
