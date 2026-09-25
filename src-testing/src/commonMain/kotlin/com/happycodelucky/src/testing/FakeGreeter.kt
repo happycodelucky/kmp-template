@@ -10,8 +10,6 @@ package com.happycodelucky.src.testing
  *
  * Replace with fakes for your real API once the template is rendered.
  */
-public class FakeGreeter(
-    private val greeting: String = "Hello from Fake",
-) {
+public class FakeGreeter(private val greeting: String = "Hello from Fake") {
     public fun greet(): String = greeting
 }

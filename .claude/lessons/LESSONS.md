@@ -8,6 +8,8 @@ reference them.
 - **B-NNN** — Bugs / gotchas (the thing that bit, and the fix).
 - **N-NNN** — Notes (build-system / toolchain quirks).
 
+_Empty to start. Add entries as you learn them._
+
 - **N-001** — version-catalog-update ≥ 1.0 does NOT read the ben-manes report; it resolves versions itself with its own (different) stability rule. The root build passes it the shared `stableVersion` predicate, `pin`s `kotlin`, `keep`s findVersion-only keys, and disables `sortByKey`. It still strips blank lines and end-of-line comments.
 - **N-002** — Build JDK stays 21: detekt 1.23.8's embedded Kotlin 2.0.21 compiler crashes on JDK 25 (`IllegalArgumentException: 25`, detekt/detekt#8714; fixed only in 2.x alphas). Revisit when detekt 2.0 is stable.
 - **N-003** — KGP 2.4.10 is only *fully* supported up to Gradle 9.5.0 / AGP 9.1.0; the build runs ahead (Gradle 9.7.1, AGP 9.4.1 — which itself requires Gradle ≥ 9.6.0), verified by the full check. Closes when SKIE unlocks Kotlin 2.4.20.
@@ -26,3 +28,4 @@ reference them.
 - **N-015** — actionlint 1.7.12's bundled metadata for `actions/create-github-app-token@v3` is stale: it demands `app-id` and rejects `client-id`. v3.2.0's action.yml has `client-id` (and deprecates `app-id`) — the workflow is right, the lint is wrong.
 - **N-016** — docs/changelog.md sets `render_macros: false`: changeset bodies are arbitrary Markdown, and mkdocs-macros would otherwise evaluate any `{{ … }}` / `{% … %}` in them (breaking the strict build or silently substituting).
 - **D-002** — The Apple framework / Swift module name is `<PascalName>Kit` (`src` → `SrcKit`; rendered `wake` → `WakeKit`), derived identically in the convention plugin (`frameworkBaseName`), `src/build.gradle.kts` (KMMBridge `frameworkName`) and `scripts/init.sh` (the framework token it renders). A module named like one of its public types (`Wake` module + `Wake` object) makes SKIE rename the type in Swift (`Wake_`) and lets the bare type shadow the module qualifier in SKIE's generated Swift. The display name stays the plain name. Renaming a shipped framework changes every Swift consumer's `import` — a breaking change.
+- **D-003** — Line length: detekt `MaxLineLength` 140 is the only limit; ktlint's `max_line_length = off` and its parameter-count forced-multiline class/function signature rules are `unset` in the root `.editorconfig` (ktlint_official otherwise wraps a 1-param constructor).

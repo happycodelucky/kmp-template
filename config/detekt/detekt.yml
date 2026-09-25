@@ -26,8 +26,8 @@ style:
     ignoreEnums: true
     ignoreNumbers: ['-1', '0', '1', '2']
   MaxLineLength:
-    # Matches the project's 120-col ktlint setting, with a little slack for the
-    # occasional long literal in test/data.
+    # The project's only line-length limit — ktlint's is off in the root
+    # .editorconfig, so the two linters can't disagree.
     maxLineLength: 140
 
 exceptions:
