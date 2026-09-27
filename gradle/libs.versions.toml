@@ -75,7 +75,7 @@ version-catalog-update = "1.1.1"
 # on it, which is why analysis used to be gated off. Upstream issue #1724.
 # (gradle-doctor was removed: its JDK checks duplicated mise + the daemon JVM
 # criteria, it had no release since 2025-08, and it used Gradle APIs that fail
-# in Gradle 10. `mise run build:profile` covers build timing — LESSONS N-009.)
+# in Gradle 10. `mise run build:profile` covers build timing — LESSONS N-001.)
 dependency-analysis = "3.19.2"
 
 # --- Android SDK ------------------------------------------------------------
