@@ -112,6 +112,8 @@ plugins:
           - recipes/*.md
         Platforms:
           - platforms/*.md
+        API reference:
+          - reference.md
         Optional:
           - changelog.md: Every release, newest first
 
@@ -134,6 +136,7 @@ nav:
     - platforms/ios.md
     - platforms/macos.md
     - platforms/jvm.md
+  - API reference: reference.md
   - Changelog: changelog.md
 
 # Strict mode: fail the build on a broken link or a dead anchor.
