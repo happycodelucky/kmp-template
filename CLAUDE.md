@@ -134,6 +134,11 @@ Two channels, non-overlapping:
   KMP metadata + klibs. For Gradle/KMP consumers. `mise run publish:local`
   installs the next `X.Y.Z-SNAPSHOT` to `~/.m2` (never the released version,
   which would shadow Central's).
+- **llms.txt for AI tools**: every published jar and the AAR carry `llms.txt` +
+  `llms-full.txt` (the module's public API with KDoc) under
+  `META-INF/<groupId>/<artifactId>/`, generated from Dokka by any publishing
+  build (LESSONS D-005). `mise run llms:generate` previews them; `mise run
+  llms:check` verifies a local publish. The docs site serves its own pair.
 - **GitHub Releases** (KMMBridge in `src/build.gradle.kts`): the SKIE-enhanced
   `__FRAMEWORK__.xcframework` for SPM consumers. Don't redeclare `XCFramework("__FRAMEWORK__")` —
   KMMBridge auto-creates it. The released `Package.swift` lives only on each
