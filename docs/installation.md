@@ -40,7 +40,7 @@ Add this repository as a package dependency, pinned to a release tag:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/happycodelucky/__PROJECT_NAME__.git", from: "{{ version }}")
+    .package(url: "https://github.com/happycodelucky/__REPO__.git", from: "{{ version }}")
 ]
 ```
 

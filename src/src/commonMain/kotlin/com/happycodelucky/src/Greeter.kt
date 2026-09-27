@@ -7,8 +7,8 @@ import co.touchlab.kermit.Logger
  *
  * Demonstrates the conventions a real library follows:
  *  - a small, headless public surface (no UI types);
- *  - Kermit for logging (wired in the convention plugin, [Logger] is available
- *    in `commonMain` on every target);
+ *  - Kermit for logging (an `implementation` dependency of this module, so
+ *    [Logger] is available in `commonMain` without reaching consumers);
  *  - the `expect`/`actual` seam kept tiny — only [platformName] crosses it.
  *
  * Replace this with your library's real entry point once `mise run init` has

@@ -4,8 +4,8 @@
  *
  * Owns everything the modules would otherwise duplicate (CLAUDE.md §4, §5): the
  * target matrix, the apple intermediate source set, the Android library block,
- * the jvm() target, compiler options, JVM target wiring, the Kermit logging
- * baseline, and the SKIE settings that must match across modules. Per-module
+ * the jvm() target, compiler options, JVM target wiring, and the SKIE settings
+ * that must match across modules. Per-module
  * identity (framework base name, bundle id, Android namespace) is DERIVED from
  * the project name, so adding a module means applying this plugin and nothing
  * else:
@@ -102,6 +102,20 @@ kotlin {
 
         withHostTestBuilder { /* enables the androidHostTest source set */ }
 
+        // What CONSUMERS must compile against, declared rather than inherited
+        // (LESSONS B-001). Left unset, AGP stamps the AAR's `minCompileSdk` with
+        // our compileSdk — 37, raised only for the Compose sample (N-006) — and
+        // every consumer's `check<Variant>AarMetadata` then demands compileSdk 37.
+        // The catalog's `android-min-compile-sdk` is the deliberate floor instead.
+        aarMetadata {
+            minCompileSdk =
+                libs
+                    .findVersion("android-min-compile-sdk")
+                    .get()
+                    .requiredVersion
+                    .toInt()
+        }
+
         // Explicit, never inherited. Left unset, AGP wires this target's
         // jvmTarget to the JDK running the build — so building on a newer JDK
         // would silently ship newer bytecode in the AAR. (This target is not a
@@ -131,14 +145,6 @@ kotlin {
         allWarningsAsErrors.set(true)
     }
 
-    // --- Logging baseline (CLAUDE.md §5) ------------------------------------
-    // Kermit in commonMain so every module gets multiplatform logging without
-    // repeating the dependency. `api` so consumers' Swift/Android code can reach
-    // the same Logger surface the library logs through.
-    sourceSets.commonMain.dependencies {
-        api(libs.findLibrary("kermit").get())
-    }
-
     // --- Public-API / ABI validation (CLAUDE.md §8) -------------------------
     // The Kotlin Gradle plugin's built-in ABI validation tracks the public API
     // surface across ALL targets (JVM + KLib/native) in one checked-in dump.
@@ -166,13 +172,19 @@ skie {
         // Disable opt-in analytics; revisit if useful.
         disableUpload.set(true)
     }
-    // Prevent SKIE from copying bundled Swift sources into the klib. A module
-    // may ship hand-written Swift sweeteners whose `extension` is only valid
-    // inside the module where the type keeps its short swift_name; if bundled
-    // into the klib, SKIE unpacks and recompiles them in downstream modules
-    // where the type is module-prefixed, causing a compile error. With bundling
-    // disabled, SKIE still compiles the Swift sources into each framework binary
-    // via its own compile task.
+    // Swift bundling OFF by default (LESSONS D-004). Off, a module's
+    // `src/<sourceSet>/swift/` still compiles into ITS OWN framework (the
+    // XCFramework SPM consumers get), but isn't copied into the klib — so KMP
+    // consumers who link the klib into their own framework don't get it.
+    //
+    // On (`skie { swiftBundling { enabled.set(true) } }` in a module's build
+    // script), the Swift ships in the klib and SKIE compiles it into EVERY
+    // downstream framework that links the module — with no per-dependency
+    // opt-out. That Swift names our types, which only keep their plain Swift
+    // names where the module is exported, so every downstream framework must then
+    // `export(...)` this module or its link fails ("cannot find type … in
+    // scope"). Turn it on when the Swift is part of the API KMP consumers need
+    // (e.g. generic helpers), and document the export requirement in the README.
     swiftBundling {
         enabled.set(false)
     }

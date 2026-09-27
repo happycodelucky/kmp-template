@@ -324,6 +324,6 @@ run = "./gradlew clean"
 # This task (and scripts/init.sh) are REMOVED when the template is rendered.
 
 [tasks.init]
-description = "Render this template into a real project. Usage: mise run init <name> [--group g] [--org o] [--display-name 'Name']"
+description = "Render this template into a real project. Usage: mise run init <name> [--group g] [--org o] [--repo r] [--display-name 'Name']"
 # Raw args are forwarded so scripts/init.sh owns parsing + validation.
 run = "sh scripts/init.sh {{arg(name='args', var=true)}}"

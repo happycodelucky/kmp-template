@@ -9,9 +9,9 @@
 
 site_name: __DISPLAY_NAME__
 site_description: A Kotlin Multiplatform library for iOS, macOS, Android, and JVM.
-site_url: https://happycodelucky.github.io/__PROJECT_NAME__/
-repo_name: happycodelucky/__PROJECT_NAME__
-repo_url: https://github.com/happycodelucky/__PROJECT_NAME__
+site_url: https://happycodelucky.github.io/__REPO__/
+repo_name: happycodelucky/__REPO__
+repo_url: https://github.com/happycodelucky/__REPO__
 edit_uri: edit/main/docs/
 copyright: Copyright &copy; 2026 Paul Bates
 
@@ -99,7 +99,7 @@ plugins:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/happycodelucky/__PROJECT_NAME__
+      link: https://github.com/happycodelucky/__REPO__
 
 # Explicit nav — never auto-discovered. Page ordering matters; this file is the truth.
 nav:

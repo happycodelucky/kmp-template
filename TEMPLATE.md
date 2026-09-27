@@ -11,7 +11,8 @@ backgrounder). Click **Use this template** on GitHub, or clone and render.
 - **Two library modules:** `:src` (the library) + `:src-testing` (public test
   fakes for consumers), shaped by a `template.kmp-library` convention plugin.
 - **Targets:** iosArm64, iosSimulatorArm64, macosArm64, Android (arm64-v8a), jvm().
-- **SKIE** for idiomatic Swift interop; **Kermit** for logging (wired in for free).
+- **SKIE** for idiomatic Swift interop; **Kermit** for logging (a private
+  `implementation` dependency of `:src` — drop it if your library doesn't log).
 - **Dual distribution:** Maven Central (vanniktech) + GitHub Releases/SPM (KMMBridge).
 - **Sample apps** under `apps/` (ios, macos, android, jvm-cli) — Apple apps via
   xcodegen + local SPM.
@@ -29,21 +30,26 @@ mise trust && mise install
 # Rename, retoken, and clean up the template:
 mise run init my-library
 #   defaults: --group com.happycodelucky  --org happycodelucky
-#   override: mise run init my-library --group com.acme --org acme --display-name "My Library"
+#             --repo <origin's repo name, e.g. my-library-kmp; else my-library>
+#   override: mise run init my-library --group com.acme --org acme --repo my-library-kmp --display-name "My Library"
 ```
 
 `init`:
 1. renames `src/` → `my-library/`, `src-testing/` → `my-library-testing/`, and
    the Kotlin package dirs to your group;
 2. renames the convention plugins (`template.*` → `my-library.*`);
-3. replaces the `__PROJECT_NAME__` / `__DISPLAY_NAME__` / `__FRAMEWORK__` tokens
-   and the group/org defaults;
+3. replaces the `__PROJECT_NAME__` / `__DISPLAY_NAME__` / `__FRAMEWORK__` /
+   `__REPO__` tokens and the group/org defaults (`__REPO__` is the GitHub repo
+   name, used for every repo URL — POM/SCM, SPM, docs site);
 4. strips its own `[tasks.init]` task, deletes this file and `scripts/`.
 
 Then:
 
 ```bash
+# Cloned kmp-template itself? Start fresh history:
 rm -rf .git && git init && git add -A && git commit -m "Initial commit"
+# Used "Use this template" (a repo like my-library-kmp)? Keep its history:
+#   git switch -c render-template && git add -A && git commit -m "Render kmp-template"
 mise run check        # ktlint + detekt + every test target — should be green
 ```
 

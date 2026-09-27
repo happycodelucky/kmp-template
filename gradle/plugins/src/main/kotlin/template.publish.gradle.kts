@@ -60,7 +60,7 @@ mavenPublishing {
 
     pom {
         // `name` and `description` are the module build script's job.
-        url.set("https://github.com/happycodelucky/__PROJECT_NAME__")
+        url.set("https://github.com/happycodelucky/__REPO__")
         inceptionYear.set("2026")
 
         licenses {
@@ -78,9 +78,9 @@ mavenPublishing {
             }
         }
         scm {
-            url.set("https://github.com/happycodelucky/__PROJECT_NAME__")
-            connection.set("scm:git:https://github.com/happycodelucky/__PROJECT_NAME__.git")
-            developerConnection.set("scm:git:ssh://git@github.com/happycodelucky/__PROJECT_NAME__.git")
+            url.set("https://github.com/happycodelucky/__REPO__")
+            connection.set("scm:git:https://github.com/happycodelucky/__REPO__.git")
+            developerConnection.set("scm:git:ssh://git@github.com/happycodelucky/__REPO__.git")
         }
     }
 }
