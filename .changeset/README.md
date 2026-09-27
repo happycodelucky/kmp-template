@@ -47,8 +47,8 @@ YAML would misread. HTML comments in the body are dropped; a leftover
 
 1. **PR check.** The `Changeset` check fails a PR that changes a file in
    release scope (below) and adds or edits no changeset here. Label the PR
-   `no-changeset` when an in-scope change still reaches no consumer. Renovate
-   PRs carry that label automatically.
+   `no-changeset` when an in-scope change still reaches no consumer, such as a
+   build-only dependency bump.
 2. **Release PR.** Every merge to `main` with changesets pending rebuilds one
    rolling PR, **Release vX.Y.Z**, on the `release/next` branch. It bumps
    `version=` in `gradle.properties` and every line marked for release (below),
