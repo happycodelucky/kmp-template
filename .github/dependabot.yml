@@ -1,0 +1,48 @@
+# Dependabot version updates: weekly PRs that keep dependencies current.
+# Security alerts and security updates are repository settings (Settings →
+# Code security), not this file; turn them on there.
+#
+# Dependabot proposes only stable releases while the current version is stable
+# (CLAUDE.md §3). Every PR is labelled `no-changeset`, which the Changeset check
+# accepts. A bump consumers will feel, like a major coroutines bump, deserves a
+# changeset: remove the label and add one to the PR.
+#
+# Not covered: mise.toml, since Dependabot has no mise ecosystem. When a
+# Gradle wrapper PR lands, bump mise.toml's `gradle` pin to match by hand.
+version: 2
+updates:
+  # gradle/libs.versions.toml (shared with the gradle/plugins build) and the
+  # Gradle wrapper.
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+    labels: [dependencies, no-changeset]
+    ignore:
+      # Kotlin is bounded above by SKIE (CLAUDE.md §3): bump it by hand, with
+      # SKIE. Every catalog entry on the `kotlin` version ref is listed, since
+      # bumping one of them moves the ref for all. kotlinx.* is unaffected.
+      - dependency-name: "org.jetbrains.kotlin:*"
+      - dependency-name: "org.jetbrains.kotlin.*"
+    groups:
+      gradle:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels: [dependencies, no-changeset]
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  # The pinned mkdocs toolchain.
+  - package-ecosystem: pip
+    directory: /docs
+    schedule:
+      interval: weekly
+    labels: [dependencies, no-changeset]
+    groups:
+      docs:
+        patterns: ["*"]

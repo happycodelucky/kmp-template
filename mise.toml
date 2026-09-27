@@ -303,7 +303,9 @@ sh scripts/release.sh $ARGS
 '''
 
 # --- dependencies ----------------------------------------------------------
-# Nothing bumps dependencies automatically: run these, review the diff, open a PR.
+# Dependabot (.github/dependabot.yml) opens weekly bump PRs for the catalog,
+# the Gradle wrapper, GitHub Actions and the docs toolchain; these are the
+# local equivalents for the catalog. It skips Kotlin (SKIE-bound) and mise.toml.
 
 [tasks."dependencies:outdated"]
 description = "List dependencies with newer STABLE versions (ben-manes gradle-versions-plugin)."
