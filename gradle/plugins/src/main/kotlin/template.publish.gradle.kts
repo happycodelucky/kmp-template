@@ -124,13 +124,16 @@ val generateLlmsTxt = tasks.register<GenerateLlmsTxt>("generateLlmsTxt") {
     outputDirectory.set(layout.buildDirectory.dir("llms"))
 }
 
-// jvmJar, the root publication's allMetadataJar, every <target>SourcesJar and
-// the root sourcesJar (the only jars a Kotlin/Native target publishes — a klib
-// carries no resources), the javadoc jars, and the AAR (bundle<Variant>Aar).
+// jvmJar, the root publication's allMetadataJar, each Apple target's
+// host-specific -metadata.jar (KGP's <target>MetadataElements Jar task), every
+// <target>SourcesJar and the root sourcesJar (a klib carries no resources, so
+// these jars are where a Kotlin/Native target holds them), the javadoc jars,
+// and the AAR (bundle<Variant>Aar). `mise run llms:check` catches any missed.
 val publishes = gradle.startParameter.taskNames.any { "publish" in it.lowercase() }
 tasks.withType<Zip>().configureEach {
     val ships = name == "jvmJar" ||
         name == "allMetadataJar" ||
+        name.endsWith("MetadataElements") ||
         name == "sourcesJar" ||
         name.endsWith("SourcesJar") ||
         name.endsWith("JavadocJar", ignoreCase = true) ||
