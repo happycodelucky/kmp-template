@@ -201,6 +201,7 @@ and detekt failures.
 3. Adding a dependency? First hunt for an existing multiplatform one (§5:
    official Kotlin/JetBrains → Google official KMP → terrakok/kmp-awesome).
    Then web-search the latest stable; add to the catalog only.
+   Dependabot opens weekly bump PRs (never Kotlin — it's SKIE-bound, §3).
    `mise run dependencies:outdated` lists candidates; `dependencies:update`
    rewrites the catalog (review the diff); `dependencies:analyze` flags unused or
    misdeclared deps (api vs implementation).
