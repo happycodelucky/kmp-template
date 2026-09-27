@@ -3,8 +3,8 @@
  *
  * The headless KMP library: business logic only, no UI dependencies
  * (CLAUDE.md §1, §7). The module shape — target matrix (incl. jvm()), apple
- * intermediate source set, Android library block, compiler options, Kermit
- * baseline, SKIE settings — comes from the `__PROJECT_NAME__.kmp-library`
+ * intermediate source set, Android library block, compiler options, SKIE
+ * settings — comes from the `__PROJECT_NAME__.kmp-library`
  * convention plugin; Maven Central publishing comes from
  * `__PROJECT_NAME__.publish`. This script keeps only what is unique to the
  * module: dependencies, the KMMBridge SPM distribution config, and POM
@@ -29,7 +29,12 @@ plugins {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            // Kermit is supplied by the convention plugin (api, commonMain).
+            // Kermit for logging — `implementation`, not `api`: logging is an
+            // internal detail, so it isn't forced onto consumers' classpaths or
+            // public API. Declared per module (not in the convention plugin) so a
+            // module that doesn't log — like `:src-testing` — carries no logger.
+            // Drop it if your library doesn't log.
+            implementation(libs.kermit)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.atomicfu)
         }

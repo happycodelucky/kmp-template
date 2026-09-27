@@ -60,8 +60,10 @@ three must agree on the Kotlin/AGP/JDK/Gradle story.
 
 ## 5. Libraries — Kotlin-first
 
-kotlinx.* family (coroutines, atomicfu, io), **Kermit for logging** (wired into
-every module by the convention plugin — `Logger` is available in `commonMain`),
+kotlinx.* family (coroutines, atomicfu, io), **Kermit for logging** (an
+`implementation` dependency of each module that logs — `:src` by default — never
+`api` and never injected by the convention plugin: a library mustn't force a
+logger onto its consumers' classpath),
 `kotlin.time` for `Duration`/`Instant`/`Clock` (NOT `java.time` in common —
 `kotlin.time.Instant`/`Clock` are stable since 2.3.x), `kotlin.uuid.Uuid` for
 UUIDs (stable since 2.4.0 — no platform UUID types in common). For HTTP, prefer
@@ -116,6 +118,14 @@ enums. **`@Throws` on an `expect` must be replicated verbatim on every `actual`*
 and a `@Throws` on a `suspend fun` must list `CancellationException`. Never
 `kotlin.Result<T>` at the boundary. Apple casing everywhere in prose, file names,
 and types (`iOS`, `macOS`) except JetBrains spellings (`iosArm64`, `withMacos()`).
+
+**Hand-written Swift** goes in `src/<sourceSet>/swift/`. SKIE Swift bundling is off
+by default: the Swift reaches only this module's own framework. Enabling it
+(per module) ships the Swift to KMP consumers too — but then every framework that
+links the module must `export` it (LESSONS D-004).
+
+**Android consumers** compile against at least `android-min-compile-sdk` (the
+AAR's `minCompileSdk`, LESSONS B-001) — not our `compileSdk`.
 
 ## 8. Distribution
 

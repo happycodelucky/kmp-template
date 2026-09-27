@@ -2,10 +2,16 @@
 # init.sh — render this KMP template into a real project.
 #
 #   sh scripts/init.sh <name> [--group <maven.group>] [--org <github-org>] \
-#                             [--display-name <Display Name>]
+#                             [--repo <github-repo>] [--display-name <Display Name>]
 #
 # Or, via mise:
-#   mise run init <name> [--group g] [--org o] [--display-name 'Name']
+#   mise run init <name> [--group g] [--org o] [--repo r] [--display-name 'Name']
+#
+# --repo is the GitHub repository NAME (github.com/<org>/<repo>), used for every
+# repo URL (POM/SCM, SPM, docs site, issue links). It defaults to the `origin`
+# remote's repo name when origin isn't kmp-template itself (the "Use this
+# template" flow, e.g. `my-lib-kmp`), else to <name>. The Maven coordinates and
+# Kotlin package always come from <name>.
 #
 # What it does, in order:
 #   1. Validate args.
@@ -36,6 +42,7 @@ fi
 NAME=""
 GROUP="com.happycodelucky"
 ORG="happycodelucky"
+REPO=""
 DISPLAY=""
 
 while [ $# -gt 0 ]; do
@@ -44,6 +51,8 @@ while [ $# -gt 0 ]; do
         --group=*)      GROUP="${1#--group=}"; shift ;;
         --org)          ORG="${2:-}"; shift 2 ;;
         --org=*)        ORG="${1#--org=}"; shift ;;
+        --repo)         REPO="${2:-}"; shift 2 ;;
+        --repo=*)       REPO="${1#--repo=}"; shift ;;
         --display-name) DISPLAY="${2:-}"; shift 2 ;;
         --display-name=*) DISPLAY="${1#--display-name=}"; shift ;;
         -h|--help)
@@ -80,6 +89,21 @@ if ! printf '%s' "$ORG" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9-]*$'; then
     exit 1
 fi
 
+# The GitHub repo name. The template's own origin (kmp-template) means the
+# template itself was cloned, so the repo doesn't exist yet: default to <name>.
+ORIGIN_REPO=$(git remote get-url origin 2>/dev/null | sed -E 's#\.git$##; s#.*[/:]##') || ORIGIN_REPO=""
+FROM_TEMPLATE_CLONE=0
+if [ -z "$ORIGIN_REPO" ] || [ "$ORIGIN_REPO" = "kmp-template" ]; then
+    FROM_TEMPLATE_CLONE=1
+fi
+if [ -z "$REPO" ]; then
+    if [ "$FROM_TEMPLATE_CLONE" -eq 0 ]; then REPO="$ORIGIN_REPO"; else REPO="$NAME"; fi
+fi
+if ! printf '%s' "$REPO" | grep -Eq '^[A-Za-z0-9._-]+$'; then
+    echo "error: --repo must be a GitHub repository name. Got: '$REPO'" >&2
+    exit 1
+fi
+
 # The framework/XCFramework module name is ALWAYS derived from <name> and must be
 # an identifier (no spaces) — it matches the convention plugin's frameworkBaseName
 # derivation (my-app -> MyAppKit). The `Kit` suffix keeps the Swift module name
@@ -113,7 +137,7 @@ echo "  name         : $NAME"
 echo "  display name : $DISPLAY"
 echo "  framework    : $FRAMEWORK"
 echo "  maven group  : $GROUP.$NAME"
-echo "  github org   : $ORG"
+echo "  github repo  : $ORG/$REPO"
 echo ""
 
 # --- 3. Rename module directories + Kotlin package dirs ---------------------
@@ -186,6 +210,7 @@ replace_in_file() {
         -e "s/__PROJECT_NAME__/$NAME/g" \
         -e "s/__DISPLAY_NAME__/$DISPLAY/g" \
         -e "s/__FRAMEWORK__/$FRAMEWORK/g" \
+        -e "s/__REPO__/$REPO/g" \
         -e "s/template\.kmp-library/$NAME.kmp-library/g" \
         -e "s/template\.publish/$NAME.publish/g" \
         -e "s/LIBRARY_VERSION/${UPPER_NAME}_VERSION/g" \
@@ -255,12 +280,18 @@ done < scripts/template-manifest.txt
 rmdir scripts 2>/dev/null || true
 
 # --- 8. Next steps ----------------------------------------------------------
+if [ "$FROM_TEMPLATE_CLONE" -eq 1 ]; then
+    GIT_STEP='  rm -rf .git && git init && git add -A && git commit -m "Initial commit"   # you cloned kmp-template itself'
+else
+    GIT_STEP="  git switch -c render-template && git add -A && git commit -m \"Render kmp-template as $NAME\"   # keep $ORG/$REPO's history"
+fi
+
 cat <<EOF
 
 Done. '$NAME' is ready.
 
 Next steps:
-  rm -rf .git && git init && git add -A && git commit -m "Initial commit"
+$GIT_STEP
   cp local.properties.example local.properties   # set sdk.dir
   mise install
   mise run api:dump      # generate the public-API baseline for this project

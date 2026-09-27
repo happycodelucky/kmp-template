@@ -54,7 +54,7 @@ XCFramework ships as a GitHub Release asset (see
 
 <!-- x-release-version-start -->
 ```swift
-.package(url: "https://github.com/happycodelucky/__PROJECT_NAME__.git", from: "0.0.0")
+.package(url: "https://github.com/happycodelucky/__REPO__.git", from: "0.0.0")
 ```
 <!-- x-release-version-end -->
 

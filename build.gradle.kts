@@ -69,9 +69,6 @@ allprojects {
 //     Narrowing to that single coordinate keeps the category live for new deps.
 //   * unusedDependencies → warn, excluding only the deps whose purpose DAGP
 //     structurally cannot see. Those are the wiring, not ordinary libraries:
-//       - `co.touchlab:kermit` — the convention plugin injects it into every
-//         module on purpose, so `Logger` is available in commonMain whether or
-//         not that module logs today (CLAUDE.md §5).
 //       - `:src` — `:src-testing` declares it as `api` to re-export the public
 //         types transitively to consumers writing `testImplementation(…-testing)`
 //         (see src-testing/build.gradle.kts). A deliberate re-export reads as
@@ -104,7 +101,6 @@ dependencyAnalysis {
             onUnusedDependencies {
                 severity("warn")
                 exclude(
-                    "co.touchlab:kermit",
                     ":src",
                     ":src-testing",
                 )
@@ -242,7 +238,8 @@ versionCatalogUpdate {
     // instead of alphabetizing them.
     sortByKey.set(false)
     keep {
-        // Keys no library/plugin references: android-compile-sdk, android-min-sdk
+        // Keys no library/plugin references: android-compile-sdk,
+        // android-min-compile-sdk, android-min-sdk
         // and jvm-target (read via the string-based findVersion("…") API in the
         // convention plugin, invisible to VCU's usage scan), and the Apple
         // deployment targets (documentation for the floors spelled out in
