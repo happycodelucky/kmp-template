@@ -41,7 +41,7 @@ val libs = the<VersionCatalogsExtension>().named("libs")
 
 // src → "SrcKit"; src-testing → "SrcTestingKit". The "Kit" suffix keeps the Swift
 // module name distinct from the library's public types: a module and a type with
-// the same name make SKIE rename the type in Swift (`Wake` → `Wake_`) and let the
+// the same name make SKIE rename the type in Swift (`MyApp` → `MyApp_`) and let the
 // bare type shadow the module qualifier in SKIE's generated code (LESSONS D-002).
 val frameworkBaseName = name.split("-").joinToString("") { part -> part.replaceFirstChar(Char::uppercase) } + "Kit"
 
@@ -104,7 +104,7 @@ kotlin {
 
         // What CONSUMERS must compile against, declared rather than inherited
         // (LESSONS B-001). Left unset, AGP stamps the AAR's `minCompileSdk` with
-        // our compileSdk — 37, raised only for the Compose sample (N-006) — and
+        // our compileSdk — 37, raised only for the Compose sample (N-004) — and
         // every consumer's `check<Variant>AarMetadata` then demands compileSdk 37.
         // The catalog's `android-min-compile-sdk` is the deliberate floor instead.
         aarMetadata {

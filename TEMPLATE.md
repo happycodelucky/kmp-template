@@ -17,7 +17,7 @@ backgrounder). Click **Use this template** on GitHub, or clone and render.
 - **Sample apps** under `apps/` (ios, macos, android, jvm-cli) — Apple apps via
   xcodegen + local SPM.
 - **Docs** (mkdocs Material + Dokka), **CI/release/docs** GitHub Actions,
-  **Renovate**, **detekt** + **ktlint**.
+  **detekt** + **ktlint**.
 - **`mise.toml`** as the task contract; **`CLAUDE.md`** (+ `AGENTS.md` symlink)
   as the agent guide.
 
