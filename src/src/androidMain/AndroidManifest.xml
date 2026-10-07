@@ -2,11 +2,32 @@
 <!--
   __PROJECT_NAME__ — Android library manifest.
 
-  A KMP Android library needs a manifest even when it declares no permissions or
-  components (the AGP KMP library plugin requires it; the namespace is supplied
-  by the convention plugin). Add <uses-permission> entries here if your library
-  needs them — the Manifest Merger pulls them into consuming apps automatically.
+  A KMP Android library needs a manifest even when it declares no permissions
+  (the AGP KMP library plugin requires it; the namespace is supplied by the
+  convention plugin). Add <uses-permission> entries here if your library needs
+  them — the Manifest Merger pulls them into consuming apps automatically.
+
+  SrcInitializer is registered with androidx.startup's InitializationProvider,
+  so the library captures the application Context before Application.onCreate
+  and its API needs no Context argument (LESSONS D-006). `tools:node="merge"` is
+  load-bearing: every library using androidx.startup (reachable, ssdp-kmp,
+  mdns-kmp, WorkManager, …) declares this same provider at this same authority;
+  without it the merge fails with a duplicate provider. With it, the merger
+  unions the <meta-data> entries under one provider.
 -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application>
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="com.happycodelucky.src.SrcInitializer"
+                android:value="androidx.startup" />
+        </provider>
+    </application>
 
 </manifest>

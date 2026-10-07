@@ -177,6 +177,13 @@ find apps -type d -path '*/com/happycodelucky/src' 2>/dev/null | while IFS= read
     rmdir "$java_root/com" 2>/dev/null || true
 done
 
+# The Android startup initializer is named after the module (SrcInitializer ->
+# <Pascal>Initializer), like reachable's/ssdp-kmp's; its references are rewritten
+# in step 5.
+find "$NAME" -type f -name 'SrcInitializer.kt' 2>/dev/null | while IFS= read -r f; do
+    mv "$f" "$(dirname "$f")/${PASCAL}Initializer.kt"
+done
+
 # --- 4. Rename convention-plugin files --------------------------------------
 PLUGIN_DIR="gradle/plugins/src/main/kotlin"
 mv "$PLUGIN_DIR/template.kmp-library.gradle.kts" "$PLUGIN_DIR/$NAME.kmp-library.gradle.kts"
@@ -225,6 +232,7 @@ replace_in_file() {
         -e "s/:src/:$NAME/g" \
         -e "s/build@@SRCTASK@@/build:src/g" \
         -e "s/assembleSrcKitXCFramework/assemble${FRAMEWORK}XCFramework/g" \
+        -e "s/SrcInitializer/${PASCAL}Initializer/g" \
         -e "s#src-testing/build#$NAME-testing/build#g" \
         -e "s#src-testing/api#$NAME-testing/api#g" \
         -e "s#src/build#$NAME/build#g" \

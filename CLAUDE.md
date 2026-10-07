@@ -162,7 +162,9 @@ Never edit `version=` by hand. Pre-releases and retries: dispatch `release.yml`
 with a `version` (e.g. `0.4.0-rc.1`), or `mise run publish:maven` by hand.
 
 **Public-API stability.** The committed dumps under `<module>/api/` are the
-reference for the public surface, across every target. `mise run check` (and CI)
+reference for the public surface, across every target except Android: KGP
+dumps only jvm + klibs, so Android-only public API (e.g. the startup
+initializer, LESSONS D-006) is guarded by review alone. `mise run check` (and CI)
 runs `api:check` and fails on any unintended change — so a breaking change to a
 published library is always deliberate. After an *intentional* public-API change,
 run `mise run api:dump` and commit the `api/` diff alongside the code; review it
@@ -177,6 +179,9 @@ Fill in as your library's platform needs become concrete. Common gotchas:
   the *host app's* Info.plist. The library can't set these.
 - **Android:** networking may need a `WifiManager.MulticastLock` and permissions;
   the library manifest contributes permissions to consumers via Manifest Merger.
+  Need a `Context`? Read `androidApplicationContext` (`internal/AppContext.kt`),
+  captured at startup by the androidx.startup `SrcInitializer` — don't add a
+  `Context` parameter to the public API (LESSONS D-006).
 - **macOS:** a sandboxed app needs `network.client` (outbound) and/or
   `network.server` (bind/listen) entitlements; they apply only to a *signed* app.
 - **JVM:** the architecture-neutral target; serves desktop/server.

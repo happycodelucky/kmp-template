@@ -51,6 +51,11 @@ kotlin {
 
         androidMain.dependencies {
             implementation(libs.kotlinx.coroutines.android)
+            // Hosts SrcInitializer, which captures the application Context at
+            // process startup so the Android API needs no Context argument
+            // (LESSONS D-006). Drop it, the initializer and the manifest entry
+            // if your library never needs a Context.
+            implementation(libs.androidx.startup.runtime)
         }
 
         // androidHostTest is created by the convention plugin's
