@@ -108,6 +108,11 @@ kotlinx-atomicfu = "0.33.0"
 # module that logs (CLAUDE.md §5). Not injected by the convention plugin.
 kermit = "2.2.0"
 
+# --- Android startup --------------------------------------------------------
+# androidx.startup — hosts the library's Initializer, which captures the
+# application Context before Application.onCreate (LESSONS D-006).
+androidx-startup = "1.2.0"
+
 # --- Sample-app deps (apps/android only — iOS/macOS consume via SPM) ---------
 androidx-activity-compose = "1.13.0"
 androidx-lifecycle-runtime-compose = "2.11.0"
@@ -138,6 +143,9 @@ kotlinx-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "k
 
 # --- Logging ----------------------------------------------------------------
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
+
+# --- Android startup --------------------------------------------------------
+androidx-startup-runtime = { module = "androidx.startup:startup-runtime", version.ref = "androidx-startup" }
 
 # --- Gradle plugin artifacts (build-logic only) ------------------------------
 # Compile-classpath dependencies for the precompiled convention plugins under
