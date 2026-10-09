@@ -177,11 +177,14 @@ find apps -type d -path '*/com/happycodelucky/src' 2>/dev/null | while IFS= read
     rmdir "$java_root/com" 2>/dev/null || true
 done
 
-# The Android startup initializer is named after the module (SrcInitializer ->
-# <Pascal>Initializer), like reachable's/ssdp-kmp's; its references are rewritten
-# in step 5.
-find "$NAME" -type f -name 'SrcInitializer.kt' 2>/dev/null | while IFS= read -r f; do
-    mv "$f" "$(dirname "$f")/${PASCAL}Initializer.kt"
+# Kotlin files named after the module (SrcInitializer.kt, SrcInitializerTest.kt
+# -> <Pascal>Initializer.kt, <Pascal>InitializerTest.kt), like reachable's/
+# ssdp-kmp's. ktlint and detekt require a file to match its single top-level
+# class, and step 5 renames the classes, so every Src*.kt in either module must
+# follow — including test source sets.
+find "$NAME" "$NAME-testing" -type f -name 'Src*.kt' 2>/dev/null | while IFS= read -r f; do
+    base=$(basename "$f")
+    mv "$f" "$(dirname "$f")/${PASCAL}${base#Src}"
 done
 
 # --- 4. Rename convention-plugin files --------------------------------------
