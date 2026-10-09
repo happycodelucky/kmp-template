@@ -46,7 +46,7 @@ kotlin = "2.4.10"
 # AGP_MAX.
 agp = "9.4.1"
 # Latest release; 0.10.14 added Kotlin 2.4.10 support (changelog 2026-07-27).
-skie = "0.10.14"
+skie = "0.10.15"
 # XCFramework → GitHub Release asset → SPM (CLAUDE.md §8).
 kmmbridge = "1.2.1"
 # Kotlin API doc generator; Dokka v2 task layout.
