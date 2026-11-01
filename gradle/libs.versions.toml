@@ -44,9 +44,9 @@ kotlin = "2.4.10"
 # 8.10.0 and 9.3.1 … proceed at your own risk" on 9.4.x — its AGP_MAX simply lags
 # the AGP release train. Advisory only; the warning clears when DAGP raises
 # AGP_MAX.
-agp = "9.4.1"
+agp = "9.5.0"
 # Latest release; 0.10.14 added Kotlin 2.4.10 support (changelog 2026-07-27).
-skie = "0.10.14"
+skie = "0.10.15"
 # XCFramework → GitHub Release asset → SPM (CLAUDE.md §8).
 kmmbridge = "1.2.1"
 # Kotlin API doc generator; Dokka v2 task layout.
@@ -64,8 +64,8 @@ maven-publish = "0.37.0"
 # has resolved versions itself since 1.0 — it does not read ben-manes output.
 # Both are fed the same stable-only predicate in the root build.gradle.kts, so
 # the report and the rewrite can never disagree on what "stable" means.
-ben-manes-versions = "0.64.0"
-version-catalog-update = "1.1.1"
+ben-manes-versions = "0.66.0"
+version-catalog-update = "1.1.2"
 
 # --- Build health / dependency hygiene --------------------------------------
 # dependency-analysis: flags unused deps, api-vs-implementation misuse, and
@@ -76,7 +76,7 @@ version-catalog-update = "1.1.1"
 # (gradle-doctor was removed: its JDK checks duplicated mise + the daemon JVM
 # criteria, it had no release since 2025-08, and it used Gradle APIs that fail
 # in Gradle 10. `mise run build:profile` covers build timing — LESSONS N-001.)
-dependency-analysis = "3.19.2"
+dependency-analysis = "3.20.0"
 
 # --- Android SDK ------------------------------------------------------------
 # API 37 = Android 17. A floor, not a preference: AndroidX Compose 1.12 and
@@ -121,7 +121,7 @@ androidx-compose-bom = "2026.09.00"
 # --- Testing ----------------------------------------------------------------
 turbine = "1.2.1"
 # Kotest — assertions + property engine only; runner is kotlin.test (CLAUDE.md §10).
-kotest = "6.2.5"
+kotest = "6.2.6"
 
 # --- Lint ------------------------------------------------------------------
 # The ktlint tool itself (com.pinterest.ktlint:ktlint-cli), run by the plugin below.
