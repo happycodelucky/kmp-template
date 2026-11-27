@@ -1,0 +1,12 @@
+public final class com/happycodelucky/src/Greeter {
+	public fun <init> ()V
+	public final fun greet ()Ljava/lang/String;
+}
+
+public final class com/happycodelucky/src/SrcInitializer : androidx/startup/Initializer {
+	public fun <init> ()V
+	public fun create (Landroid/content/Context;)Landroid/content/Context;
+	public synthetic fun create (Landroid/content/Context;)Ljava/lang/Object;
+	public fun dependencies ()Ljava/util/List;
+}
+

@@ -27,26 +27,28 @@
 [versions]
 
 # --- Toolchain --------------------------------------------------------------
-# Kotlin 2.4.10 is the highest version SKIE 0.10.14 supports. CLAUDE.md §3:
+# Kotlin 2.4.21 is the highest version SKIE 0.10.16 supports. CLAUDE.md §3:
 # "If SKIE doesn't yet support a Kotlin version, we wait. Don't bump Kotlin
 # past SKIE's supported range." This is a paired bump — verify SKIE's changelog
 # states support for the target Kotlin before raising either pin.
-# Kotlin 2.4.20 went stable 2026-09-07, but SKIE's `versionSupport.kotlin` still
-# ends at 2.4.0(2.4.10); 2.4.20 support is open as touchlab/SKIE#205. Pinned by
-# the VCU `pin {}` in the root build script so dependencies:update can't bump it.
-# NOTE: KGP 2.4.10 is only *fully* supported up to Gradle 9.5.0 / AGP 9.1.0;
-# the Gradle and AGP pins here run ahead of that (AGP 9.4 requires Gradle
-# ≥ 9.6.0). Verified by the full check, not by the compatibility table — the
-# gap closes when SKIE unlocks 2.4.20 (supported up to Gradle 9.7.0).
-kotlin = "2.4.10"
-# com.android.kotlin.multiplatform.library variant. AGP 9.4 supports up to API 37.
-# NOTE: dependency-analysis 3.19.2 prints "only known to work with AGP between
-# 8.10.0 and 9.3.1 … proceed at your own risk" on 9.4.x — its AGP_MAX simply lags
-# the AGP release train. Advisory only; the warning clears when DAGP raises
-# AGP_MAX.
-agp = "9.4.1"
-# Latest release; 0.10.14 added Kotlin 2.4.10 support (changelog 2026-07-27).
-skie = "0.10.14"
+# Kotlin 2.5.0 is only at RC2 (stable planned December 2026) — held per
+# CLAUDE.md §3 (no EAP/RC/Beta on main). Pinned by the VCU `pin {}` in the root
+# build script so dependencies:update can't bump it.
+# NOTE: KGP 2.4.20–2.4.21 is only *fully* supported up to Gradle 9.7.0 / AGP
+# 9.3.1 (https://kotlinlang.org/docs/gradle-configure-project.html); the Gradle
+# and AGP pins here run ahead of that (AGP 9.5 requires Gradle ≥ 9.6.0). Kotlin
+# says newer Gradle "can also be used … with warnings", and Gradle's own compat
+# table lists itself as tested with Kotlin up to 2.5.0-Beta1. Verified by the
+# full check, not by the compatibility table.
+kotlin = "2.4.21"
+# com.android.kotlin.multiplatform.library variant. AGP 9.5 requires Gradle
+# ≥ 9.6.0 (satisfied by the 9.9.2 wrapper) and supports up to API 37.
+# NOTE: dependency-analysis 3.20.4 still caps AGP_MAX at 9.3.1 and prints
+# "proceed at your own risk" on anything newer — its AGP_MAX simply lags the
+# AGP release train. Advisory only; the warning clears when DAGP raises AGP_MAX.
+agp = "9.5.3"
+# 0.10.15 added Kotlin 2.4.20 support, 0.10.16 added 2.4.21 (changelog 2026-11-10).
+skie = "0.10.16"
 # XCFramework → GitHub Release asset → SPM (CLAUDE.md §8).
 kmmbridge = "1.2.1"
 # Kotlin API doc generator; Dokka v2 task layout.
