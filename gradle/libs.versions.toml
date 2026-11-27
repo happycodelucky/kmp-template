@@ -51,8 +51,9 @@ agp = "9.5.3"
 skie = "0.10.16"
 # XCFramework → GitHub Release asset → SPM (CLAUDE.md §8).
 kmmbridge = "1.2.1"
-# Kotlin API doc generator; Dokka v2 task layout.
-dokka = "2.2.0"
+# Kotlin API doc generator; Dokka v2 task layout. 2.3.0 fixes CVE-2026-84939
+# (a critical path-traversal vulnerability) — see .claude/lessons/LESSONS.md.
+dokka = "2.3.0"
 # vanniktech's gradle-maven-publish-plugin — publishes signed artifacts to the
 # Sonatype Central Portal (central.sonatype.com). Pins the JDK17 / Gradle 9 /
 # AGP 9 floor and supports com.android.kotlin.multiplatform.library publications.
@@ -66,8 +67,8 @@ maven-publish = "0.37.0"
 # has resolved versions itself since 1.0 — it does not read ben-manes output.
 # Both are fed the same stable-only predicate in the root build.gradle.kts, so
 # the report and the rewrite can never disagree on what "stable" means.
-ben-manes-versions = "0.64.0"
-version-catalog-update = "1.1.1"
+ben-manes-versions = "0.67.0"
+version-catalog-update = "1.1.2"
 
 # --- Build health / dependency hygiene --------------------------------------
 # dependency-analysis: flags unused deps, api-vs-implementation misuse, and
@@ -78,7 +79,9 @@ version-catalog-update = "1.1.1"
 # (gradle-doctor was removed: its JDK checks duplicated mise + the daemon JVM
 # criteria, it had no release since 2025-08, and it used Gradle APIs that fail
 # in Gradle 10. `mise run build:profile` covers build timing — LESSONS N-001.)
-dependency-analysis = "3.19.2"
+# 3.20.0 requires Kotlin 2.3.0+ / Gradle 9.4.0+ (both satisfied); 3.20.1-3.20.4
+# are KMP-analysis regression fixes.
+dependency-analysis = "3.20.4"
 
 # --- Android SDK ------------------------------------------------------------
 # API 37 = Android 17. A floor, not a preference: AndroidX Compose 1.12 and
@@ -117,13 +120,22 @@ androidx-startup = "1.2.0"
 
 # --- Sample-app deps (apps/android only — iOS/macOS consume via SPM) ---------
 androidx-activity-compose = "1.13.0"
-androidx-lifecycle-runtime-compose = "2.11.0"
+# 2.11.1 is a pure bug fix (currentStateFlow now returns the same instance);
+# still declares minCompileSdk=37 in its aar-metadata, so no SDK-floor change.
+androidx-lifecycle-runtime-compose = "2.11.1"
+# HELD at 2026.09.00 (maps to Compose 1.12.1 / material3 1.4.0). 2026.11.01
+# maps to Compose 1.13.0, whose ui/foundation AARs declare
+# minCompileSdk=37.1 (not plain 37) — bumping would force android-compile-sdk
+# to "37.1" (and the exact SDK platform package) for a sample-only dependency.
+# Revisit alongside a deliberate compileSdk bump.
 androidx-compose-bom = "2026.09.00"
 
 # --- Testing ----------------------------------------------------------------
 turbine = "1.2.1"
 # Kotest — assertions + property engine only; runner is kotlin.test (CLAUDE.md §10).
-kotest = "6.2.5"
+# 6.2.7 restores compatibility with Gradle 9.9.x — load-bearing for this repo's
+# Gradle 9.9.2 wrapper.
+kotest = "6.2.7"
 
 # --- Lint ------------------------------------------------------------------
 # The ktlint tool itself (com.pinterest.ktlint:ktlint-cli), run by the plugin below.
