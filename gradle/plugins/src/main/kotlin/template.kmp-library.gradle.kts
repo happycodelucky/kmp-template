@@ -148,8 +148,8 @@ kotlin {
     // --- Public-API / ABI validation (CLAUDE.md §8) -------------------------
     // The Kotlin Gradle plugin's built-in ABI validation tracks the public API
     // surface across ALL targets (JVM + KLib/native) in one checked-in dump.
-    // `mise run apiCheck` (wired into `check`) fails CI if the public surface
-    // changes without an explicit `mise run apiDump` — so breaking changes to a
+    // `mise run api:check` (wired into `check`) fails CI if the public surface
+    // changes without an explicit `mise run api:dump` — so breaking changes to a
     // published library are always deliberate and reviewed.
     //
     // When the host can't compile every target (e.g. a Linux CI box can't build

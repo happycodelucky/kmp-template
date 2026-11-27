@@ -126,8 +126,8 @@ run = "./gradlew :src:ktlintFormat :src-testing:ktlintFormat"
 
 # --- public API / ABI ------------------------------------------------------
 # The committed dumps under <module>/api/ are the reference for the public
-# surface. `apiCheck` runs as part of `check` (and CI) — it fails if the public
-# API changed without a deliberate `apiDump`. Review the api/ diff like any other
+# surface. `api:check` runs as part of `check` (and CI) — it fails if the public
+# API changed without a deliberate `api:dump`. Review the api/ diff like any other
 # code change.
 
 [tasks."api:check"]
