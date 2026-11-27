@@ -26,7 +26,7 @@
 # catalog's `jvm-target`. Not 25 yet: detekt 1.23.8's embedded Kotlin compiler
 # crashes on JDK 25 (detekt/detekt#8714, fixed only in the 2.x alphas).
 java     = "temurin-21"
-gradle   = "9.7.1"        # Matches gradle/wrapper/gradle-wrapper.properties.
+gradle   = "9.9.2"        # Matches gradle/wrapper/gradle-wrapper.properties.
 python   = "3.14"         # mkdocs toolchain (docs:* tasks).
 xcodegen = "latest"       # apps/ios + apps/macos project generation.
 gh       = "latest"       # release.yml uses gh.
@@ -126,8 +126,8 @@ run = "./gradlew :src:ktlintFormat :src-testing:ktlintFormat"
 
 # --- public API / ABI ------------------------------------------------------
 # The committed dumps under <module>/api/ are the reference for the public
-# surface. `apiCheck` runs as part of `check` (and CI) — it fails if the public
-# API changed without a deliberate `apiDump`. Review the api/ diff like any other
+# surface. `api:check` runs as part of `check` (and CI) — it fails if the public
+# API changed without a deliberate `api:dump`. Review the api/ diff like any other
 # code change.
 
 [tasks."api:check"]

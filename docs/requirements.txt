@@ -1,7 +1,14 @@
 # Pinned exactly so local `mkdocs build` and CI build the same site.
 # Bump these in lockstep; web-search latest stable before bumping.
 mkdocs==1.6.1
-mkdocs-material==9.7.7
+# 9.8.0 fixes GHSA-wxw8-4jgj-q85j (privacy plugin); needs Python ≥3.11 (we pin
+# 3.14 in mise.toml). Material announces end-of-life 2027-05-05 (successor:
+# Zensical) — not actionable yet.
+mkdocs-material==9.8.2
 mkdocs-macros-plugin==1.5.0
-pymdown-extensions==12.1
-mkdocs-llmstxt==0.5.0
+# 13.x needs Python ≥3.11.5 / Markdown ≥3.10.3 (satisfied); fixes quadratic-time
+# parsing in pymdownx.snippets (used here). Arithmatex's default-mode change and
+# MagicLink's GFM autolink-rule change don't apply — neither extension is
+# enabled in mkdocs.yml.
+pymdown-extensions==13.1.2
+mkdocs-llmstxt==0.5.1

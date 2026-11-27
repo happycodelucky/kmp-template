@@ -225,6 +225,11 @@ val stableVersion = "^[0-9][0-9.]*$".toRegex()
 tasks.withType<DependencyUpdatesTask>().configureEach {
     // Read the stable release channel, not integration/milestone metadata.
     revision = "release"
+    // ben-manes 0.66.0 changed the default outputFormatter to "plain,problems"
+    // (adding a Gradle Problems API report alongside the plain-text one). Pin
+    // the format explicitly so `dependencies:outdated`'s console output
+    // doesn't change out from under a future bump.
+    outputFormatter = "plain"
     rejectVersionIf {
         // The current version is never rejected here — ben-manes only feeds
         // candidate upgrades through this predicate.
